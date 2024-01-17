@@ -43,7 +43,6 @@ device = "cuda:0" if torch.cuda.is_available() else "cpu"
 # Must set jit=False for training
 model_name = "ViT-B/32"
 # model_name = "ViT-L/14"
-model, preprocess = clip.load(model_name, device=device, jit=False)
 
 # count font number
 train_font_num = len(list(json.load(open(train_json_path, "r")).keys()))

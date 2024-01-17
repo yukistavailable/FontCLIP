@@ -2,8 +2,6 @@ from dataclasses import dataclass
 import string
 from typing import Optional
 
-import clip
-
 from utils.init_model import (
     device,
     preprocess,
@@ -127,7 +125,8 @@ class Config:
     use_fast_evaluator: bool = False
 
     def __post_init__(self):
-        assert self.model_name in clip.available_models()
+        # TODO: set available model name
+        # assert self.model_name in clip.available_models()
         self.model = load_model(
             checkpoint_path=self.checkpoint_path,
             device=device,

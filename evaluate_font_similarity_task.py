@@ -35,7 +35,6 @@ from cj_fonts import inclusive_fonts, fifty_fonts
 # If using GPU then use mixed precision training.
 device = "cuda:0" if torch.cuda.is_available() else "cpu"
 # Must set jit=False for training
-model, preprocess = clip.load("ViT-B/32", device=device, jit=False)
 
 fifty_font_paths = [
     os.path.join(cj_font_dir, f) for f in fifty_fonts.split("\n") if f != ""

@@ -37,7 +37,7 @@ if __name__ == "__main__":
     max_sampled_attributes_nums = [4, 5, 6]
     random_prompt_num_per_font = 70000
     random_prompt_num_per_font = 10000
-    random_prompt_num_per_font = 10
+    random_prompt_num_per_font = 100
     num_of_prompt_per_font_per_epoch = 30
     # num_of_prompt_per_font_per_epoch = 1
     sample_num = 50
@@ -80,8 +80,8 @@ if __name__ == "__main__":
     # OFT
     oft_lr = 2e-4
     # oft_lr = 5e-4
-    use_oft_vision = True
-    use_oft_text = True
+    use_oft_vision = False
+    use_oft_text = False
     oft_config_vision = OFTConfig(
         r=4,
         # eps = 6e-5,
@@ -113,7 +113,7 @@ if __name__ == "__main__":
 
     # LoRA
     lora_lr = 2e-4
-    use_lora_vision = True
+    use_lora_vision = False
     use_lora_text = True
     lora_config_vision = LoRAConfig(
         r=256,
@@ -139,7 +139,7 @@ if __name__ == "__main__":
     # CoOp
     coop_lr = 1e-4
     use_coop_vision = False
-    use_coop_text = True
+    use_coop_text = False
     do_coop_vision_optimize = False
     do_coop_text_optimize = False
     precontext_length_text = 48

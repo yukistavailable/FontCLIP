@@ -13,7 +13,7 @@ import torch
 from torch.utils.data import Dataset
 from torchvision.transforms.functional import to_pil_image, to_tensor, pil_to_tensor
 
-import clip
+from utils.tokenizer import tokenize
 from utils.init_model import (
     my_preprocess,
     preprocess_for_aug,
@@ -386,7 +386,7 @@ class MyDataset(Dataset):
                             and (float(v_v) >= self.attribute_threshold)
                         ]
 
-                    # tmp = [clip.tokenize(self.generate_multiple_attributes_prompt([attribute], use_random=False)) for attribute in tmp_attributes]
+                    # tmp = [tokenize(self.generate_multiple_attributes_prompt([attribute], use_random=False)) for attribute in tmp_attributes]
                     tmp = []
                     tmp_attribute_indices = []
                     # tmp = [self.generate_multiple_attributes_prompt([attribute], use_random=False) for attribute in tmp_attributes]
@@ -405,7 +405,7 @@ class MyDataset(Dataset):
                                 use_clip_like_format=self.use_clip_like_format,
                             )
                             tmp.append(
-                                clip.tokenize(
+                                tokenize(
                                     row_text, context_length=self.context_length
                                 )
                             )
@@ -421,7 +421,7 @@ class MyDataset(Dataset):
                             continue
                         if self.rich_prompt:
                             tmp.append(
-                                clip.tokenize(
+                                tokenize(
                                     self.generate_prompt(
                                         a,
                                         rich=True,
@@ -434,7 +434,7 @@ class MyDataset(Dataset):
                         else:
                             if float(v_v) >= self.attribute_threshold:
                                 tmp.append(
-                                    clip.tokenize(
+                                    tokenize(
                                         self.generate_prompt(
                                             a,
                                             single_character=self.single_character,
@@ -446,7 +446,7 @@ class MyDataset(Dataset):
                                 # tmp.append(self.generate_prompt(a, single_character=self.single_character))
                             elif float(v_v) <= attribute_under_threshold:
                                 tmp.append(
-                                    clip.tokenize(
+                                    tokenize(
                                         self.generate_prompt(
                                             a,
                                             negative=self.use_negative,
@@ -822,7 +822,7 @@ class TestDataset(MyDataset):
                 }
                 self.font_to_attributes = {
                     k: [
-                        clip.tokenize(
+                        tokenize(
                             self.generate_prompt(
                                 a_k,
                                 single_character=self.single_character,
@@ -840,7 +840,7 @@ class TestDataset(MyDataset):
             if self.target_attributes is not None:
                 self.font_to_attributes = {
                     os.path.splitext(os.path.basename(k))[0]: [
-                        clip.tokenize(
+                        tokenize(
                             self.generate_prompt(
                                 a, use_clip_like_format=self.use_clip_like_format
                             ),
@@ -990,7 +990,7 @@ class TestTextDataset(Dataset):
         if self.target_attributes is not None:
             for a in target_attributes:
                 self.prompts.append(
-                    clip.tokenize(
+                    tokenize(
                         MyDataset.generate_prompt(
                             a, use_clip_like_format=self.use_clip_like_format
                         ),

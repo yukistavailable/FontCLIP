@@ -10,7 +10,7 @@ import torch
 from torch.nn import CrossEntropyLoss
 from torch.utils.data import DataLoader
 
-import clip
+from utils.tokenizer import tokenize
 from utils.init_model import device, model, preprocess
 from utils.transform_image import (
     char_size,
@@ -68,7 +68,7 @@ def predict_cos_sim(
     context_length = model.context_length
     if hasattr(model, "precontext_length"):
         context_length -= model.precontext_length
-    embedded_prompt = model.encode_text(clip.tokenize(prompt, context_length=context_length).to(device))
+    embedded_prompt = model.encode_text(tokenize(prompt, context_length=context_length).to(device))
     cos_sim = torch.cosine_similarity(embedded_image, embedded_prompt, dim=-1)
     return cos_sim, text_image
 
@@ -231,7 +231,7 @@ def generate_all_attribute_embedded_prompts(attributes, model=model, use_clip_li
                 prompt = f"Text written in {attribute} font."
             else:
                 prompt = f"{attribute} font"
-            embedded_prompt = model.encode_text(clip.tokenize(prompt, context_length=context_length).to(device)).cpu()
+            embedded_prompt = model.encode_text(tokenize(prompt, context_length=context_length).to(device)).cpu()
             result[attribute] = embedded_prompt
         return result
 

@@ -1002,6 +1002,10 @@ class Trainer:
                                 "test_sim_cr": test_sim_cr,
                                 "test_corr": test_corr,
                             }
+                    else:
+                        print(
+                            f"EPOCH: {epoch+1}, loss: {epoch_loss}, val_loss: {val_loss}, test_loss: {test_loss}"
+                        )
                     if best_val_loss is None or val_loss > best_val_loss:
                         best_val_loss = val_loss
                         best_epoch = epoch + 1
