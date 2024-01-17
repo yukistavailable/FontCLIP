@@ -2,7 +2,7 @@ from dataclasses import dataclass
 import string
 from typing import Optional
 
-from utils.init_model import (
+from models.init_model import (
     device,
     preprocess,
     load,
@@ -25,8 +25,8 @@ from utils.transform_image import (
     char_size,
     my_transform,
 )
-from utils.oft import OFTConfig
-from utils.lora import LoRAConfig
+from models.oft import OFTConfig
+from models.lora import LoRAConfig
 
 
 @dataclass

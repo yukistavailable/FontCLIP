@@ -10,7 +10,7 @@ import random
 import clip
 import os
 from tqdm import tqdm
-from utils.init_model import load_model, preprocess
+from models.init_model import load_model, preprocess
 from utils.initialize_font_data import (
     retrieve_font_path,
     inclusive_attributes,
@@ -29,7 +29,7 @@ from utils.transform_image import (
     my_transform,
     generate_images_for_fonts,
 )
-from utils.evaluate_tools import (
+from evals.evaluate_tools import (
     generate_all_attribute_embedded_prompts,
     user_attribute_choices_count,
     compare_two_fonts,

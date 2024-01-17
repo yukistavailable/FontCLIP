@@ -9,11 +9,11 @@ from torchvision.transforms import Compose, Resize, CenterCrop, ToTensor, Normal
 import urllib
 import warnings
 
-from utils.ex_clip_multiheadattention import ExMultiheadAttention
-from utils.ex_clip import ExCLIP
+from models.ex_clip_multiheadattention import ExMultiheadAttention
+from models.ex_clip import ExCLIP
 from utils.transform_image import my_transform
-from utils.oft import OFTConfig
-from utils.lora import LoRAConfig
+from models.oft import OFTConfig
+from models.lora import LoRAConfig
 
 device = "cuda:0" if torch.cuda.is_available() else "cpu"
 model_name = "ViT-B/32"

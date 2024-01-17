@@ -1,7 +1,7 @@
-from utils.config_fine_tune import Config
-from utils.oft import OFTConfig
-from utils.lora import LoRAConfig
-from utils.trainer import Trainer
+from trains.config_fine_tune import Config
+from models.oft import OFTConfig
+from models.lora import LoRAConfig
+from trains.trainer import Trainer
 from utils.initialize_font_data import (
     gray_scale_image_file_dir,
     fox_text_four_lines,

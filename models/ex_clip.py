@@ -5,9 +5,9 @@ from torch import nn
 from torch.nn import Parameter
 import numpy as np
 
-from utils.ex_clip_multiheadattention import ExMultiheadAttention
-from utils.oft import OFTConfig
-from utils.lora import LoRAConfig
+from models.ex_clip_multiheadattention import ExMultiheadAttention
+from models.oft import OFTConfig
+from models.lora import LoRAConfig
 
 device = "cuda:0" if torch.cuda.is_available() else "cpu"
 

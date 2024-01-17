@@ -11,8 +11,8 @@ from torch.nn.functional import linear, pad, softmax, dropout
 from torch.nn.init import xavier_uniform_, constant_, xavier_normal_
 import torch
 
-from utils.lora import LoRAConfig, lora_in_projection, init_normal_nullable, init_zero_nullable
-from utils.oft import OFTConfig, OFTLinearLayer
+from models.lora import LoRAConfig, lora_in_projection, init_normal_nullable, init_zero_nullable
+from models.oft import OFTConfig, OFTLinearLayer
 
 
 def xavier_uniform_nullable(module):

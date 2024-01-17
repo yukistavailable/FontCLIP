@@ -14,7 +14,7 @@ from torch.utils.data import Dataset
 from torchvision.transforms.functional import to_pil_image, to_tensor, pil_to_tensor
 
 from utils.tokenizer import tokenize
-from utils.init_model import (
+from models.init_model import (
     my_preprocess,
     preprocess_for_aug,
     preprocess_for_normalize,
