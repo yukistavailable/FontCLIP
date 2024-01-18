@@ -4,7 +4,7 @@ import os
 from PIL import Image, ImageFont
 import random
 from tqdm import tqdm
-from typing import Union, List, Optional
+from typing import Union, List, Optional, Tuple
 import string
 
 
@@ -82,7 +82,20 @@ class MyDataset(Dataset):
             return f"{attribute} font"
 
     @staticmethod
-    def attribute_to_index(attribute):
+    def attribute_to_index(attribute: str) -> int:
+        """
+        convert attribute to index in all_attributes
+
+        Parameters
+        ----------
+        attribute : str
+            attribute ex. "bold"
+
+        Returns
+        -------
+        int
+            index of attribute
+        """
         return all_attributes.index(attribute) + 1
 
     @staticmethod
@@ -101,9 +114,10 @@ class MyDataset(Dataset):
         int
             index of attribute
         """
-        l = attribute_num * 2 + 1
+        index_length = attribute_num * 2 + 1
         if attribute.startswith("not"):
-            return l - MyDataset.attribute_to_index(attribute[4:])
+            unsigned_attribute = attribute[4:]
+            return index_length - MyDataset.attribute_to_index(unsigned_attribute)
         return MyDataset.attribute_to_index(attribute)
 
     @staticmethod
@@ -124,20 +138,45 @@ class MyDataset(Dataset):
         str
             attribute ex. "bold" or "not bold"
         """
-        l = attribute_num * 2 + 1
-        assert 1 <= idx <= l
+        index_length = attribute_num * 2 + 1
+        # idx should be more equal than 1 because 1 is plussed in attribute_to_index
+        assert 1 <= idx <= index_length, f"idx must be in [1, {index_length}]"
+
+        # if idx is more than attribute_num, it means that the attribute is negative, so return "not attribute"
         if idx > attribute_num:
-            tmp_idx = l - idx
+            tmp_idx = index_length - idx
             return f"not {all_attributes[tmp_idx - 1]}"
         return all_attributes[idx - 1]
 
     @staticmethod
     def generate_multiple_attributes_prompt(
-        attributes,
-        use_random=False,
-        max_sample_num=10,
-        p=None,
-    ):
+        attributes: List[str],
+        use_random: bool = False,
+        max_sample_num: int = 3,
+        p: List[float] = None,
+    ) -> Tuple[str, torch.Tensor]:
+        """
+        generate a prompt including multiple attribute nums like "italic, formal, legible font" bease on each attribute scores
+
+        Parameters
+        ----------
+        attributes : List[str]
+            attributes to be used in the dataset ex. ["angular", "not artistic", "not attention-grabbing", ..., "wide"]
+        use_random : bool, optional
+            use random or not, by default False
+        max_sample_num : int, optional
+            max sample num, by default 3
+        p : List[float], optional
+            probability of each attribute, by default None
+            probability of each attribute is calculated by the attribute score
+
+        Returns
+        -------
+        str
+            prompt ex. "italic, formal, legible font"
+        torch.Tensor
+            signed attribute indices ex. [24, 18, 25]
+        """
         max_sample_num = min(max_sample_num, len(attributes))
         if use_random:
             sample_num = random.randint(1, max_sample_num)
@@ -294,7 +333,7 @@ class MyDataset(Dataset):
         use_multiple_attributes=False,
         use_random_attributes=False,
         random_prompts_num=1000,
-        max_sample_num=5,
+        max_sample_num=3,
         sample_num_each_epoch=5,
         rich_prompt=False,
         preprocess=None,
