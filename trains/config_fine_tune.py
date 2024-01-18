@@ -87,7 +87,6 @@ class Config:
     use_chopped_clip: bool = False
     chopped_clip_vision_layers: int = 3
     chopped_clip_text_layers: int = 3
-    use_clip_dual_adapter: bool = False
 
     # train only visual encoder with paired images
     train_only_visual_encoder: bool = False
@@ -233,7 +232,6 @@ class Config:
                 or self.use_oft_text
                 or self.use_lora_vision
                 or self.use_lora_text
-                or self.use_clip_dual_adapter
                 or self.use_coop_text
                 or self.use_coop_vision
             ):
@@ -294,8 +292,7 @@ class Config:
                 ]
         elif self.model_name == "ViT-L/14":
             if (
-                self.use_clip_dual_adapter
-                or self.use_coop_text
+                self.use_coop_text
                 or self.use_coop_vision
             ):
                 self.target_layers_text = []
