@@ -93,7 +93,6 @@ class Config:
     train_only_visual_encoder: bool = False
     use_same_text_for_each_pair: bool = True
 
-    use_clip_like_format: bool = False
     char_size: int = char_size
     test_char_size: int = 150
 
@@ -432,8 +431,6 @@ class Config:
             self.signature += "_single_char"
         if self.use_negative:
             self.signature += "_use_negative"
-        if self.use_clip_like_format:
-            self.signature += "_clip_like_format"
         if self.use_negative_loss:
             self.signature += f"_use_negative_loss{self.negative_loss_weight}"
         if self.use_contrastive_image_loss:

@@ -58,7 +58,6 @@ if __name__ == "__main__":
     use_negative_loss = False
     use_negative = True
     use_single_character = False
-    use_clip_like_format = False
     geta = 0.2
 
     predict_mode = False
@@ -166,7 +165,6 @@ if __name__ == "__main__":
     if True:
         # for unlabeled_sampling_ratio in unlabeled_sampling_ratios:
         # for max_sampled_attributes_num in max_sampled_attributes_nums:
-        # for use_clip_like_format in [True, False]:
         # for lower_bound_of_scale in lower_bound_of_scales:
         result = []
         for i in range(0, trained_model_num):
@@ -246,7 +244,6 @@ if __name__ == "__main__":
                 precontext_length_vision=precontext_length_vision,
                 precontext_dropout_rate=precontext_dropout_rate,
                 pt_applied_layers=pt_applied_layers,
-                use_clip_like_format=use_clip_like_format,
                 lower_bound_of_scale=lower_bound_of_scale,
                 texts_for_font_image=texts_for_font_image,
                 start_index_for_train_model=i,
