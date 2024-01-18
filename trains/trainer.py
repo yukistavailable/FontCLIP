@@ -36,7 +36,6 @@ from evals.evaluate_tools import (
     evaluate_similarity_comparison_task,
     evaluate_use_dumped_image,
     evaluate_correlation_coefficient,
-    evaluate_correlation_coefficient_of_paired_images,
 )
 from dataset.dataset import (
     MyDataset,
@@ -44,7 +43,6 @@ from dataset.dataset import (
     set_image_tensors,
     TestImageDataset,
     TestTextDataset,
-    PairedImageDataset,
 )
 from trains.config_fine_tune import Config
 
@@ -66,12 +64,8 @@ class Trainer:
                 tracemalloc.start()
             tmp_exclusive_attributes = copy(exclusive_attributes)
             tmp_inclusive_attributes = copy(inclusive_attributes)
-            if self.config.train_only_visual_encoder:
-                tmp_validation_json_path = val_all_gwfonts_json_path
-                tmp_test_json_path = val_all_gwfonts_json_path
-            else:
-                tmp_validation_json_path = validation_json_path
-                tmp_test_json_path = test_json_path
+            tmp_validation_json_path = validation_json_path
+            tmp_test_json_path = test_json_path
             val_texts_for_font_image = self.config.val_texts_for_font_image
             test_texts_for_font_image = self.config.val_texts_for_font_image
             print("val_texts_for_font_image", val_texts_for_font_image)
@@ -82,7 +76,6 @@ class Trainer:
 
             if (
                 self.config.do_cross_validation
-                and not self.config.train_only_visual_encoder
             ):
                 # update signature
                 self.config.set_signature(cross_validation_index=i)
@@ -160,56 +153,39 @@ class Trainer:
                 self.config.model.initialize_parameters()
             print(self.config.signature)
 
-            if self.config.train_only_visual_encoder:
-                dataset = PairedImageDataset(
-                    font_dir=font_dir,
-                    json_path=self.config.json_path,
-                    texts_for_font_image=self.config.texts_for_font_image,
-                    char_size=300,
-                    preprocess=preprocess_for_single_character,
-                    sample_num_each_epoch=self.config.sample_num_each_epoch,
-                    image_num_each_pair=2,
-                    image_file_dir=None,
-                    dump_image=False,
-                    use_same_text_for_pair=False,
-                )
-                print(self.config.texts_for_font_image)
-                print("train dataset font num: ", len(dataset.font_paths))
-            else:
-                dataset = MyDataset(
-                    font_dir,
-                    self.config.json_path,
-                    texts_for_font_image=self.config.texts_for_font_image,
-                    use_negative=self.config.use_negative,
-                    use_weight=self.config.use_weight,
-                    use_score=self.config.use_score,
-                    use_multiple_attributes=self.config.use_multiple_attributes,
-                    use_random_attributes=self.config.use_random_attributes,
-                    random_prompts_num=self.config.random_prompts_num,
-                    max_sample_num=self.config.max_sample_num,
-                    rich_prompt=self.config.rich_prompt,
-                    sample_num_each_epoch=self.config.sample_num_each_epoch,
-                    image_file_dir=self.config.image_file_dir,
-                    attribute_threshold=self.config.attribute_threshold,
-                    attribute_under_threshold=self.config.attribute_under_threshold,
-                    preprocess=self.config.tmp_preprocess,
-                    dump_image=self.config.train_dump_image,
-                    exclusive_attributes=tmp_exclusive_attributes,
-                    geta=self.config.geta,
-                    single_character=self.config.single_character,
-                    use_negative_loss=self.config.use_negative_loss
-                    or self.config.use_bce_loss,
-                    use_contrastive_image_loss=self.config.use_contrastive_image_loss or self.config.use_triplet_image_loss,
-                    store_unnormalized_image=False,
-                    use_clip_like_format=self.config.use_clip_like_format,
-                    char_size=self.config.char_size,
-                    context_length=self.config.context_length,
-                )
-                print(
-                    "train prompts num: ",
-                    sum([len(v) for v in dataset.font_to_attributes.values()]),
-                )
-                print("train dataset font num: ", len(dataset.font_paths))
+            dataset = MyDataset(
+                font_dir,
+                self.config.json_path,
+                texts_for_font_image=self.config.texts_for_font_image,
+                use_negative=self.config.use_negative,
+                use_weight=self.config.use_weight,
+                use_score=self.config.use_score,
+                use_multiple_attributes=self.config.use_multiple_attributes,
+                use_random_attributes=self.config.use_random_attributes,
+                random_prompts_num=self.config.random_prompts_num,
+                max_sample_num=self.config.max_sample_num,
+                rich_prompt=self.config.rich_prompt,
+                sample_num_each_epoch=self.config.sample_num_each_epoch,
+                image_file_dir=self.config.image_file_dir,
+                attribute_threshold=self.config.attribute_threshold,
+                attribute_under_threshold=self.config.attribute_under_threshold,
+                preprocess=self.config.tmp_preprocess,
+                dump_image=self.config.train_dump_image,
+                exclusive_attributes=tmp_exclusive_attributes,
+                geta=self.config.geta,
+                single_character=self.config.single_character,
+                use_negative_loss=self.config.use_negative_loss
+                or self.config.use_bce_loss,
+                use_contrastive_image_loss=self.config.use_contrastive_image_loss or self.config.use_triplet_image_loss,
+                store_unnormalized_image=False,
+                char_size=self.config.char_size,
+                context_length=self.config.context_length,
+            )
+            print(
+                "train prompts num: ",
+                sum([len(v) for v in dataset.font_to_attributes.values()]),
+            )
+            print("train dataset font num: ", len(dataset.font_paths))
 
             unlabeled_dataset = None
             if self.config.unlabeled_json_path is not None:
@@ -235,7 +211,6 @@ class Trainer:
                     geta=1.0,
                     single_character=self.config.single_character,
                     use_negative_loss=self.config.use_negative_loss,
-                    use_clip_like_format=self.config.use_clip_like_format,
                     char_size=self.config.char_size,
                     context_length=self.config.context_length,
                 )
@@ -252,52 +227,29 @@ class Trainer:
 
             # use aug
             if self.config.use_aug or self.config.tmp_preprocess != preprocess:
-                if self.config.train_only_visual_encoder:
+                set_image_tensors(
+                    dataset,
+                    preprocess=self.config.tmp_preprocess,
+                    sample_num=self.config.sample_num,
+                    color_jitter_sample_num=self.config.color_jitter_sample_num if self.config.use_color_jitter else 0
+                )
+                if unlabeled_dataset is not None:
                     set_image_tensors(
-                        dataset,
-                        preprocess=preprocess_for_single_character,
-                        sample_num=self.config.sample_num,
-                        padding=45,
+                        unlabeled_dataset,
+                        preprocess=self.config.tmp_preprocess,
+                        sample_num=self.config.unlabeled_sample_num,
+                    )
+                    print(
+                        f"{sum([len(image_tensors) for image_tensors in dataset.font_text_to_image_tensors]) + sum([len(image_tensors) for image_tensors in unlabeled_dataset.font_text_to_image_tensors])} images are randomly created."
                     )
                 else:
-                    set_image_tensors(
-                        dataset,
-                        preprocess=self.config.tmp_preprocess,
-                        sample_num=self.config.sample_num,
-                        color_jitter_sample_num=self.config.color_jitter_sample_num if self.config.use_color_jitter else 0
+                    print(
+                        f"{sum([len(image_tensors) for image_tensors in dataset.font_text_to_image_tensors])} images are randomly created."
                     )
-                    if unlabeled_dataset is not None:
-                        set_image_tensors(
-                            unlabeled_dataset,
-                            preprocess=self.config.tmp_preprocess,
-                            sample_num=self.config.unlabeled_sample_num,
-                        )
-                        print(
-                            f"{sum([len(image_tensors) for image_tensors in dataset.font_text_to_image_tensors]) + sum([len(image_tensors) for image_tensors in unlabeled_dataset.font_text_to_image_tensors])} images are randomly created."
-                        )
-                    else:
-                        print(
-                            f"{sum([len(image_tensors) for image_tensors in dataset.font_text_to_image_tensors])} images are randomly created."
-                        )
 
             val_datasets = None
             test_datasets = None
-            if self.config.train_only_visual_encoder:
-                val_dataset = PairedImageDataset(
-                    font_dir=font_dir,
-                    json_path=tmp_validation_json_path,
-                    texts_for_font_image=val_texts_for_font_image,
-                    char_size=300,
-                    preprocess=preprocess,
-                    sample_num_each_epoch=1,
-                    image_num_each_pair=2,
-                    image_file_dir=None,
-                    dump_image=True,
-                    use_same_text_for_pair=False,
-                    test_mode=True,
-                )
-
-            elif dataset.use_score:
+            if dataset.use_score:
                 val_dataset = TestDataset(
                     font_dir,
                     tmp_validation_json_path,
@@ -308,7 +260,6 @@ class Trainer:
                     image_file_dir=self.config.image_file_dir_for_validation,
                     single_character=self.config.single_character,
                     use_score=self.config.use_score,
-                    use_clip_like_format=self.config.use_clip_like_format,
                     char_size=self.config.test_char_size,
                     context_length=self.config.context_length,
                 )
@@ -322,7 +273,6 @@ class Trainer:
                     image_file_dir=self.config.image_file_dir_for_validation,
                     single_character=self.config.single_character,
                     use_score=self.config.use_score,
-                    use_clip_like_format=self.config.use_clip_like_format,
                     char_size=self.config.test_char_size,
                     context_length=self.config.context_length,
                 )
@@ -362,7 +312,6 @@ class Trainer:
                         dump_image=self.config.tmp_dump_image,
                         image_file_dir=self.config.image_file_dir_for_validation,
                         single_character=self.config.single_character,
-                        use_clip_like_format=self.config.use_clip_like_format,
                         char_size=self.config.test_char_size,
                         context_length=self.config.context_length,
                     )
@@ -378,7 +327,6 @@ class Trainer:
                         dump_image=self.config.tmp_dump_image,
                         image_file_dir=self.config.image_file_dir_for_validation,
                         single_character=self.config.single_character,
-                        use_clip_like_format=self.config.use_clip_like_format,
                         char_size=self.config.test_char_size,
                         context_length=self.config.context_length,
                     )
@@ -599,9 +547,7 @@ class Trainer:
 
                     weights = None
                     images_contrastive = None
-                    if self.config.train_only_visual_encoder:
-                        images_1, images_2 = batch
-                    elif dataset.use_score:
+                    if dataset.use_score:
                         images, texts, scores = batch
                         scores = torch.tensor(scores, dtype=torch.float16)
                     elif dataset.use_weight:
@@ -645,82 +591,48 @@ class Trainer:
                     else:
                         images, texts = batch
 
-                    if self.config.train_only_visual_encoder:
-                        images_1 = images_1.to(device)
-                        images_2 = images_2.to(device)
-                    else:
-                        if images_contrastive is not None:
-                            images_contrastive = images_contrastive.to(device)
-                        images = images.to(device)
-                        texts = texts.to(device)
+                    if images_contrastive is not None:
+                        images_contrastive = images_contrastive.to(device)
+                    images = images.to(device)
+                    texts = texts.to(device)
 
                     if self.config.use_coop_text or self.config.use_coop_vision:
-                        if self.config.train_only_visual_encoder:
-                            image_features_1 = self.config.model.encode_image(images_1)
-                            image_features_2 = self.config.model.encode_image(images_2)
-                            image_features_1 = image_features_1 / image_features_1.norm(
-                                dim=-1, keepdim=True
+                        image_features = self.config.model.encode_image(images)
+                        text_features = self.config.model.encode_text(texts)
+                        image_features = image_features / image_features.norm(
+                            dim=-1, keepdim=True
+                        )
+                        text_features = text_features / text_features.norm(
+                            dim=-1, keepdim=True
+                        )
+                        logit_scale = self.config.model.logit_scale.exp()
+                        logits_per_image = (
+                            logit_scale * image_features @ text_features.t()
+                        )
+                        logits_per_text = logits_per_image.t()
+                        if images_contrastive is not None:
+                            image_features_contrastive = (
+                                self.config.model.encode_image(images_contrastive)
                             )
-                            image_features_2 = image_features_2 / image_features_2.norm(
-                                dim=-1, keepdim=True
-                            )
-                            logits_scale = self.config.model.logit_scale.exp()
-                            logits_per_image_1 = (
-                                logits_scale * image_features_1 @ image_features_2.t()
-                            )
-                            logits_per_image_2 = logits_per_image_1.t()
-
-                        else:
-                            image_features = self.config.model.encode_image(images)
-                            text_features = self.config.model.encode_text(texts)
-                            image_features = image_features / image_features.norm(
-                                dim=-1, keepdim=True
-                            )
-                            text_features = text_features / text_features.norm(
-                                dim=-1, keepdim=True
-                            )
-                            logit_scale = self.config.model.logit_scale.exp()
-                            logits_per_image = (
-                                logit_scale * image_features @ text_features.t()
-                            )
-                            logits_per_text = logits_per_image.t()
-                            if images_contrastive is not None:
-                                image_features_contrastive = (
-                                    self.config.model.encode_image(images_contrastive)
+                            image_features_contrastive = (
+                                image_features_contrastive
+                                / image_features_contrastive.norm(
+                                    dim=-1, keepdim=True
                                 )
-                                image_features_contrastive = (
-                                    image_features_contrastive
-                                    / image_features_contrastive.norm(
-                                        dim=-1, keepdim=True
-                                    )
-                                )
-                                logits_per_contrastive_image_1 = (
-                                    logit_scale
-                                    * image_features
-                                    @ image_features_contrastive.t()
-                                )
-                                logits_per_contrastive_image_2 = (
-                                    logits_per_contrastive_image_1.t()
-                                )
+                            )
+                            logits_per_contrastive_image_1 = (
+                                logit_scale
+                                * image_features
+                                @ image_features_contrastive.t()
+                            )
+                            logits_per_contrastive_image_2 = (
+                                logits_per_contrastive_image_1.t()
+                            )
 
                     elif dataset.use_score:
                         logits = self.config.model(images, texts)
                     else:
-                        if self.config.train_only_visual_encoder:
-                            image_features_1 = self.config.model.encode_image(images_1)
-                            image_features_2 = self.config.model.encode_image(images_2)
-                            image_features_1 = image_features_1 / image_features_1.norm(
-                                dim=-1, keepdim=True
-                            )
-                            image_features_2 = image_features_2 / image_features_2.norm(
-                                dim=-1, keepdim=True
-                            )
-                            logits_scale = self.config.model.logit_scale.exp()
-                            logits_per_image_1 = (
-                                logits_scale * image_features_1 @ image_features_2.t()
-                            )
-                            logits_per_image_2 = logits_per_image_1.t()
-                        elif images_contrastive is not None:
+                        if images_contrastive is not None:
                             image_features = self.config.model.encode_image(images)
                             text_features = self.config.model.encode_text(texts)
                             image_features = image_features / image_features.norm(
@@ -775,22 +687,16 @@ class Trainer:
                             + loss_txt(logits_per_text, ground_truth)
                         ) / 2
                     else:
-                        if self.config.train_only_visual_encoder:
+                        if self.config.use_bce_loss:
                             total_loss = (
-                                loss_img(logits_per_image_1, ground_truth)
-                                + loss_img(logits_per_image_2, ground_truth)
+                                loss_img(logits_per_image, mask_matrix)
+                                + loss_txt(logits_per_text, mask_matrix.T)
                             ) / 2
                         else:
-                            if self.config.use_bce_loss:
-                                total_loss = (
-                                    loss_img(logits_per_image, mask_matrix)
-                                    + loss_txt(logits_per_text, mask_matrix.T)
-                                ) / 2
-                            else:
-                                total_loss = (
-                                    loss_img(logits_per_image, ground_truth)
-                                    + loss_txt(logits_per_text, ground_truth)
-                                ) / 2
+                            total_loss = (
+                                loss_img(logits_per_image, ground_truth)
+                                + loss_txt(logits_per_text, ground_truth)
+                            ) / 2
 
                     if self.config.use_negative_loss:
                         negative_loss = (
@@ -846,20 +752,8 @@ class Trainer:
                             convert_weights(self.config.model)
 
                     # free images, texts
-                    if self.config.train_only_visual_encoder:
-                        # images_1 = images_1.to("cpu")
-                        # images_2 = images_2.to("cpu")
-                        del (
-                            images_1,
-                            images_2,
-                            image_features_1,
-                            image_features_2,
-                            logits_per_image_1,
-                            logits_per_image_2,
-                        )
-                    else:
-                        images = images.to("cpu")
-                        texts = texts.to("cpu")
+                    images = images.to("cpu")
+                    texts = texts.to("cpu")
                     total_loss = total_loss.to("cpu")
                     epoch_loss += total_loss.item()
                     torch.cuda.empty_cache()
@@ -896,11 +790,6 @@ class Trainer:
                         print(
                             f"EPOCH: {epoch+1}, loss: {epoch_loss}, val_loss: {val_loss}, test_loss: {test_loss}, val_corr: {val_corr}, test_corr: {test_corr}"
                         )
-                    elif self.config.train_only_visual_encoder:
-                        val_loss = evaluate_correlation_coefficient_of_paired_images(
-                            self.config.model, val_dataset
-                        )
-                        test_loss = 0
                     elif self.config.task_for_validation:
                         val_attr_cr = evaluate_attribute_comparison_task_for_each_comparison(
                             tmp_validation_font_names,
@@ -908,7 +797,6 @@ class Trainer:
                             model=self.config.model,
                             image_file_dir=self.config.image_file_dir_for_validation,
                             inclusive_attributes=tmp_inclusive_attributes,
-                            use_clip_like_format=self.config.use_clip_like_format,
                         )
                         test_attr_cr = 0
                         test_attr_cr = evaluate_attribute_comparison_task_for_each_comparison(
@@ -917,7 +805,6 @@ class Trainer:
                             model=self.config.model,
                             image_file_dir=self.config.image_file_dir_for_validation,
                             inclusive_attributes=tmp_inclusive_attributes,
-                            use_clip_like_format=self.config.use_clip_like_format,
                         )
 
                         val_sim_cr = 0

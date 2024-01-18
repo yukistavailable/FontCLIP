@@ -23,7 +23,7 @@ from utils.initialize_font_data import (
     font_names,
     inclusive_attributes,
 )
-from dataset.dataset import TestDataset, TestImageDataset, TestTextDataset, PairedImageDataset
+from dataset.dataset import TestDataset, TestImageDataset, TestTextDataset
 
 
 def retrieve_one_leave_out_model_path(
@@ -511,42 +511,6 @@ def evaluate(
     if count == 0:
         return 0
     return corr_sum / count, result
-
-def evaluate_correlation_coefficient_of_paired_images(model, image_dataset: PairedImageDataset):
-    data_loader = DataLoader(image_dataset, batch_size=64, shuffle=False, num_workers=4)
-    model.eval()
-    total_loss = 0
-    torch.cuda.empty_cache()
-    with torch.no_grad():
-        for batch in iter(data_loader):
-            images_1, images_2 = batch
-            images_1 = images_1.to(device)
-            images_2 = images_2.to(device)
-            image_features_1 = model.encode_image(images_1)
-            image_features_2 = model.encode_image(images_2)
-            image_features_1 = image_features_1 / image_features_1.norm(
-                dim=-1, keepdim=True
-            )
-            image_features_2 = image_features_2 / image_features_2.norm(
-                dim=-1, keepdim=True
-            )
-            logits_scale = model.logit_scale.exp()
-            logits_per_image_1 = (
-                logits_scale * image_features_1 @ image_features_2.t()
-            )
-            logits_per_image_2 = logits_per_image_1.t()
-            loss_img = CrossEntropyLoss()
-            ground_truth = torch.arange(
-                len(images_1), dtype=torch.long, device=device
-            )
-            total_loss += (
-                loss_img(logits_per_image_1, ground_truth)
-                + loss_img(logits_per_image_2, ground_truth)
-            ) / 2
-        del images_1, images_2, image_features_1, image_features_2, logits_per_image_1, logits_per_image_2, ground_truth
-        torch.cuda.empty_cache()
-    return - total_loss
-
 
 def evaluate_correlation_coefficient(model, json_path, image_dataset: TestImageDataset, text_dataset: TestTextDataset):
     model.eval()

@@ -4,7 +4,7 @@ import os
 from PIL import Image, ImageFont
 import random
 from tqdm import tqdm
-from typing import Union, List
+from typing import Union, List, Optional
 import string
 
 
@@ -32,17 +32,40 @@ from utils.transform_image import (
 class MyDataset(Dataset):
     @staticmethod
     def generate_prompt(
-        attribute,
-        negative=False,
-        rich=False,
-        score=None,
-        single_character=False,
-        use_clip_like_format=False,
-    ):
+        attribute: str,
+        negative: bool = False,
+        rich: bool = False,
+        score: Optional[float] = None,
+        single_character: bool = False,
+    ) -> str:
+        """
+        generate a prompt like "bold font" bease on the attribute score
+
+        Parameters
+        ----------
+        attribute : str
+            attribute ex. "bold" or "not bold"
+        negative : bool, optional
+            negative or not, by default False
+        rich : bool, optional
+            rich or not, by default False
+            if rich is True, score must be specified
+            if rich is True, return prompt like "very bold font"
+        score : float, optional
+            score of attribute, by default None
+        single_character : bool, optional
+            single character or not, by default False
+            if single_character is True, return prompt like "a photo of a character in a bold font"
+
+        Returns
+        -------
+        str
+            prompt
+        """
         if single_character:
             if negative:
                 return f"a photo of a character in a not {attribute} font"
-            return f"a photo a character in a {attribute} font"
+            return f"a photo of a character in a {attribute} font"
         elif rich:
             assert score is not None
             if score >= 75:
@@ -53,10 +76,6 @@ class MyDataset(Dataset):
                 return f"not so {attribute} font"
             else:
                 return f"not {attribute} font"
-        elif use_clip_like_format:
-            if negative:
-                return f"Text written in not {attribute} font."
-            return f"Text written in {attribute} font."
         else:
             if negative:
                 return f"not {attribute} font"
@@ -88,7 +107,9 @@ class MyDataset(Dataset):
         return MyDataset.attribute_to_index(attribute)
 
     @staticmethod
-    def index_to_signed_attribute(idx: int, attribute_num: int = 37, all_attributes: List[str] = all_attributes) -> str:
+    def index_to_signed_attribute(
+        idx: int, attribute_num: int = 37, all_attributes: List[str] = all_attributes
+    ) -> str:
         """
         convert index to attribute
 
@@ -107,7 +128,7 @@ class MyDataset(Dataset):
         assert 1 <= idx <= l
         if idx > attribute_num:
             tmp_idx = l - idx
-            return f'not {all_attributes[tmp_idx - 1]}'
+            return f"not {all_attributes[tmp_idx - 1]}"
         return all_attributes[idx - 1]
 
     @staticmethod
@@ -116,7 +137,6 @@ class MyDataset(Dataset):
         use_random=False,
         max_sample_num=10,
         p=None,
-        use_clip_like_format=False,
     ):
         max_sample_num = min(max_sample_num, len(attributes))
         if use_random:
@@ -140,13 +160,6 @@ class MyDataset(Dataset):
                 torch.zeros(max_sample_num - len(attributes), dtype=torch.float32),
             )
         )
-        if use_clip_like_format:
-            return (
-                "Text written in "
-                + ", ".join([f"{attribute}" for attribute in attributes])
-                + " font.",
-                signed_attribute_indices,
-            )
         return (
             ", ".join([f"{attribute}" for attribute in attributes]) + " font",
             signed_attribute_indices,
@@ -234,12 +247,16 @@ class MyDataset(Dataset):
                         mask_matrix[i][j] = 0
                         break
         return mask_matrix
-    
-    def mask_font_idx_signed_attribute_matrix_ground_truth_fast(self, font_indices, signed_attribute_indices):
+
+    def mask_font_idx_signed_attribute_matrix_ground_truth_fast(
+        self, font_indices, signed_attribute_indices
+    ):
         assert len(font_indices) == len(signed_attribute_indices)
-        
+
         # Pre-allocate the mask matrix
-        mask_matrix = torch.ones((len(font_indices), len(font_indices)), dtype=torch.float32)
+        mask_matrix = torch.ones(
+            (len(font_indices), len(font_indices)), dtype=torch.float32
+        )
 
         # Vectorized computation for the mask matrix
         for i, font_index in enumerate(font_indices):
@@ -291,9 +308,8 @@ class MyDataset(Dataset):
         use_negative_loss=False,
         use_contrastive_image_loss=False,
         use_vae_loss=False,
-        vae_target_characters = string.ascii_uppercase,
-        vae_target_characters_size = 64,
-        use_clip_like_format=False,
+        vae_target_characters=string.ascii_uppercase,
+        vae_target_characters_size=64,
         store_unnormalized_image=False,
         n_px_of_unnormalized_image=224,
         context_length=77,
@@ -327,7 +343,6 @@ class MyDataset(Dataset):
         self.use_vae_loss = use_vae_loss
         self.vae_target_characters = vae_target_characters
         self.vae_target_character_size = vae_target_characters_size
-        self.use_clip_like_format = use_clip_like_format
         self.store_unnormalized_image = store_unnormalized_image
         self.n_px_of_unnormalized_image = n_px_of_unnormalized_image
         self.font_idx_signed_attribute_matrix = None
@@ -402,12 +417,9 @@ class MyDataset(Dataset):
                                 use_random=True,
                                 max_sample_num=self.max_sample_num,
                                 p=p,
-                                use_clip_like_format=self.use_clip_like_format,
                             )
                             tmp.append(
-                                tokenize(
-                                    row_text, context_length=self.context_length
-                                )
+                                tokenize(row_text, context_length=self.context_length)
                             )
                             tmp_attribute_indices.append(signed_attribute_indices)
                     self.font_to_attributes[k] = tmp
@@ -426,7 +438,6 @@ class MyDataset(Dataset):
                                         a,
                                         rich=True,
                                         score=float(v_v),
-                                        use_clip_like_format=self.use_clip_like_format,
                                     ),
                                     context_length=self.context_length,
                                 )
@@ -438,7 +449,6 @@ class MyDataset(Dataset):
                                         self.generate_prompt(
                                             a,
                                             single_character=self.single_character,
-                                            use_clip_like_format=self.use_clip_like_format,
                                         ),
                                         context_length=self.context_length,
                                     )
@@ -451,7 +461,6 @@ class MyDataset(Dataset):
                                             a,
                                             negative=self.use_negative,
                                             single_character=self.single_character,
-                                            use_clip_like_format=self.use_clip_like_format,
                                         ),
                                         context_length=self.context_length,
                                     )
@@ -522,18 +531,26 @@ class MyDataset(Dataset):
         self.font_to_vae_target_character_tensor = {}
         self.character_to_one_hot_vector = {}
         if self.use_vae_loss:
-            preprocess_for_resize_ = transform_for_resize(self.vae_target_character_size)
+            preprocess_for_resize_ = transform_for_resize(
+                self.vae_target_character_size
+            )
             for font_name, font_path in zip(self.font_names, self.font_paths):
                 font = ImageFont.truetype(font_path, self.vae_target_character_size)
                 self.font_to_vae_target_character_tensor[font_name] = torch.stack(
                     [
-                        preprocess_for_resize_(self.create_vae_target_character_image(c, font, char_size=self.vae_target_character_size))
+                        preprocess_for_resize_(
+                            self.create_vae_target_character_image(
+                                c, font, char_size=self.vae_target_character_size
+                            )
+                        )
                         for c in self.vae_target_characters
                     ]
                 ).to(model.dtype)
 
             for c in self.vae_target_characters:
-                one_hot_vector = torch.zeros(len(self.vae_target_characters)).to(model.dtype)
+                one_hot_vector = torch.zeros(len(self.vae_target_characters)).to(
+                    model.dtype
+                )
                 one_hot_vector[self.vae_target_characters.index(c)] = 1
                 self.character_to_one_hot_vector[c] = one_hot_vector
 
@@ -647,8 +664,12 @@ class MyDataset(Dataset):
             tmp_font_path = self.font_paths[font_idx]
             tmp_font_name = os.path.splitext(os.path.basename(tmp_font_path))[0]
             character_idx = random.randint(0, len(self.vae_target_characters) - 1)
-            vae_target_character_tensor = self.font_to_vae_target_character_tensor[tmp_font_name][character_idx]
-            one_hot_vector = self.character_to_one_hot_vector[self.vae_target_characters[character_idx]]
+            vae_target_character_tensor = self.font_to_vae_target_character_tensor[
+                tmp_font_name
+            ][character_idx]
+            one_hot_vector = self.character_to_one_hot_vector[
+                self.vae_target_characters[character_idx]
+            ]
 
         image_2 = None
         if self.font_text_to_image_tensors is not None:
@@ -782,7 +803,6 @@ class TestDataset(MyDataset):
         image_file_dir=None,
         single_character=False,
         use_score=False,
-        use_clip_like_format=False,
         context_length=77,
     ):
         super().__init__(
@@ -796,7 +816,6 @@ class TestDataset(MyDataset):
             image_file_dir=image_file_dir,
             single_character=single_character,
             use_score=use_score,
-            use_clip_like_format=use_clip_like_format,
             context_length=context_length,
         )
         if self.predict_mode:
@@ -826,7 +845,6 @@ class TestDataset(MyDataset):
                             self.generate_prompt(
                                 a_k,
                                 single_character=self.single_character,
-                                use_clip_like_format=self.use_clip_like_format,
                             ),
                             context_length=self.context_length,
                         )
@@ -841,9 +859,7 @@ class TestDataset(MyDataset):
                 self.font_to_attributes = {
                     os.path.splitext(os.path.basename(k))[0]: [
                         tokenize(
-                            self.generate_prompt(
-                                a, use_clip_like_format=self.use_clip_like_format
-                            ),
+                            self.generate_prompt(a),
                             context_length=self.context_length,
                         )
                         for a in target_attributes
@@ -978,12 +994,10 @@ class TestTextDataset(Dataset):
     def __init__(
         self,
         target_attributes=None,
-        use_clip_like_format=False,
         context_length=77,
     ):
         super().__init__()
         self.target_attributes = target_attributes
-        self.use_clip_like_format = use_clip_like_format
         self.context_length = context_length
 
         self.prompts = []
@@ -991,9 +1005,7 @@ class TestTextDataset(Dataset):
             for a in target_attributes:
                 self.prompts.append(
                     tokenize(
-                        MyDataset.generate_prompt(
-                            a, use_clip_like_format=self.use_clip_like_format
-                        ),
+                        MyDataset.generate_prompt(a),
                         context_length=self.context_length,
                     )
                 )
@@ -1082,191 +1094,8 @@ def set_image_tensors(dataset: MyDataset, preprocess=my_preprocess, sample_num=5
     dataset.set_font_text_to_image_tensors(font_text_to_image_tensors)
 
 
-class PairedImageDataset(Dataset):
-    def __init__(
-        self,
-        font_dir,
-        json_path,
-        texts_for_font_image,
-        use_same_text_for_pair=True,
-        char_size=150,
-        preprocess=None,
-        dump_image=False,
-        image_file_dir=None,
-        image_num_each_pair=2,
-        sample_num_each_epoch=30,
-        store_unnormalized_image=False,
-        n_px_of_unnormalized_image=64,
-        test_mode=False,
-    ):
-        # super init
-        super().__init__()
-        self.font_dir = font_dir
-        self.json_path = json_path
-        self.texts_for_font_image = texts_for_font_image
-        self.use_same_text_for_pair = use_same_text_for_pair
-        self.char_size = char_size
-        self.preprocess = preprocess
-        self.image_file_dir = image_file_dir
-        self.font_json = json.load(open(self.json_path, "r"))
-        self.image_num_each_pair = image_num_each_pair
-        self.sample_num_each_epoch = sample_num_each_epoch
-        self.store_unnormalized_image = store_unnormalized_image
-        self.n_px_of_unnormalized_image = n_px_of_unnormalized_image
-        self.use_score = False
-        self.use_weight = False
-        self.dump_image = dump_image
-        if self.image_file_dir is not None:
-            assert len(self.texts_for_font_image) == 1
-        self.reverse_image = False
-        if test_mode:
-            assert self.image_num_each_pair == 2
-            self.reverse_image = True
-
-        # if font_dir is list
-        if isinstance(font_dir, list):
-            print("font_dir is list")
-            tmp_font_paths = font_dir
-        else:
-            tmp_font_paths = [os.path.join(font_dir, f) for f in os.listdir(font_dir)]
-        self.font_paths = []
-        self.font_names = []
-        for font_path in tmp_font_paths:
-            font_name = os.path.splitext(os.path.basename(font_path))[0]
-            if font_name in list(self.font_json.keys()):
-                self.font_names.append(font_name)
-                self.font_paths.append(font_path)
-        self.fonts = [
-            ImageFont.truetype(font_path, char_size) for font_path in self.font_paths
-        ]
-
-        if dump_image:
-            self.dump_image_tensor()
-
-        self.font_text_to_image_tensors = None
-        self.font_text_to_unnormalized_image_tensors = None
-
-    def create_image(self, text, font, font_path=None, no_preprocess=False, padding=0):
-        if self.image_file_dir:
-            assert font_path is not None
-            font_name = os.path.splitext(os.path.basename(font_path))[0]
-            image_file_path = os.path.join(self.image_file_dir, font_name + ".png")
-            image = Image.open(image_file_path)
-            image = my_convert_to_rgb(image)
-            image = self.preprocess(image)
-            return image
-
-        else:
-            if len(text) == 1:
-                width = self.char_size + int(padding) * 2
-                height = self.char_size + int(padding) * 2
-            else:
-                line_num = text.count("\n") + 1
-                if self.dump_image:
-                    width = (
-                        int((self.char_size * 0.66) * len(text) / line_num)
-                        + int(padding) * 2
-                    )
-                else:
-                    width = (
-                        int(self.char_size * len(text) * 1.8 / line_num)
-                        + int(padding) * 2
-                    )
-                height = int(self.char_size) * line_num + int(padding) * 2
-
-            image = draw_text_with_new_lines(text, font, width, height)
-            if no_preprocess:
-                return image
-
-            image = self.preprocess(image)
-            return image
-
-    def dump_image_tensor(self):
-        self.dumped_images = []
-        # trick
-        self.dump_image = False
-        # the image num is font num * text num
-        if self.image_file_dir is None:
-            for font, font_path in zip(self.fonts, self.font_paths):
-                for text in self.texts_for_font_image:
-                    image = self.create_image(text, font, font_path)
-                    self.dumped_images.append(image)
-        else:
-            for font, font_path in zip(self.fonts, self.font_paths):
-                image = self.create_image(None, font, font_path)
-                self.dumped_images.append(image)
-        self.dump_image = True
-
-    def __len__(self):
-        if self.font_text_to_image_tensors is not None:
-            if self.use_same_text_for_pair:
-                return (
-                    len(self.texts_for_font_image)
-                    * len(self.font_paths)
-                    * self.sample_num_each_epoch
-                )
-            else:
-                return len(self.font_paths) * self.sample_num_each_epoch
-
-        elif self.dumped_images is not None:
-            return len(self.dumped_images)
-        else:
-            return len(self.font_paths) * self.sample_num_each_epoch
-
-    def __getitem__(self, idx):
-        text_idx = idx // (len(self.font_paths) * self.sample_num_each_epoch)
-        text_block_idx = idx % (len(self.font_paths) * self.sample_num_each_epoch)
-        font_idx = text_block_idx // self.sample_num_each_epoch
-        if self.font_text_to_image_tensors is not None:
-            if self.use_same_text_for_pair:
-                images = self.font_text_to_image_tensors[
-                    text_idx * len(self.font_paths) + font_idx
-                ]
-                # randomly sample one image
-                return [random.choice(images) for _ in range(self.image_num_each_pair)]
-            else:
-                return [
-                    random.choice(
-                        self.font_text_to_image_tensors[
-                            random.randint(0, len(self.texts_for_font_image) - 1)
-                            * len(self.font_paths)
-                            + font_idx
-                        ]
-                    )
-                    for _ in range(self.image_num_each_pair)
-                ]
-
-        else:
-            image = self.dumped_images[font_idx]
-            if self.reverse_image:
-                return image, torch.flip(image, [1, 2])
-            return [image for _ in range(self.image_num_each_pair)]
-
-    def set_preprocess(self, preprocess):
-        self.preprocess = preprocess
-
-    def set_font_text_to_image_tensors(self, font_text_to_image_tensors):
-        self.font_text_to_image_tensors = font_text_to_image_tensors
-    
-    def set_font_text_to_unnormalized_image_tensors(
-        self, font_text_to_unnormalized_image_tensors
-    ):
-        self.font_text_to_unnormalized_image_tensors = (
-            font_text_to_unnormalized_image_tensors
-        )
-
-    def do_apotosis(self):
-        if hasattr(self, "font_text_to_image_tensors"):
-            del self.font_text_to_image_tensors
-
-        if hasattr(self, "font_text_to_unnormalized_image_tensors"):
-            del self.font_text_to_unnormalized_image_tensors
-
-        gc.collect()
-
-
 def set_image_tensors(
-    dataset: Union[MyDataset, PairedImageDataset],
+    dataset: MyDataset,
     preprocess=my_preprocess,
     sample_num=5,
     padding=0,
