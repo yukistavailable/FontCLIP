@@ -274,7 +274,8 @@ class MyDataset(Dataset):
         return mask_matrix
 
     def update_font_attribute_counts(self) -> None:
-        """ """
+        """ 
+        """
         if self.use_multiple_attributes:
             self.font_attribute_counts = (
                 len(self.font_paths) * self.sample_num_each_epoch
@@ -284,6 +285,81 @@ class MyDataset(Dataset):
             for attribute_values in self.font_to_attributes.values():
                 tmp_font_attribute_counts += len(attribute_values)
             self.font_attribute_counts = tmp_font_attribute_counts
+
+    def create_image(self, text: str, font: PIL.Image.Font, font_path: Optional[str]=None, no_preprocess: bool=False, padding: int=0) -> PIL.Image:
+        """
+        Render font image given text and font
+        
+        Parameters
+        ----------
+        text : str
+            text to render
+        font : PIL.Image.Font
+            font to render
+        font_path : Optional[str], optional
+            font path, by default None
+        no_preprocess : bool, optional
+            no preprocess or not, by default False
+            if no_preprocess is True, the image is not preprocessed
+        padding : int, optional
+            padding, by default 0
+        """
+        if self.image_file_dir:
+            assert font_path is not None
+            font_name = os.path.splitext(os.path.basename(font_path))[0]
+            image_file_path = os.path.join(self.image_file_dir, font_name + ".png")
+            image = Image.open(image_file_path)
+            image = my_convert_to_rgb(image)
+            image = self.preprocess(image)
+            return image
+
+        else:
+            if len(text) == 1:
+                width = self.char_size + int(padding) * 2
+                height = self.char_size + int(padding) * 2
+            else:
+                line_num = text.count("\n") + 1
+                if self.dump_image:
+                    width = (
+                        int((self.char_size * 0.66) * len(text) / line_num)
+                        + int(padding) * 2
+                    )
+                else:
+                    width = (
+                        int(self.char_size * len(text) * 1.8 / line_num)
+                        + int(padding) * 2
+                    )
+                height = int(self.char_size) * line_num + int(padding) * 2
+
+            image = draw_text_with_new_lines(text, font, width, height)
+            if no_preprocess:
+                return image
+
+            image = self.preprocess(image)
+            return image
+
+    def dump_image_tensor(self) -> None:
+        """
+        store font image tensors to self.dumped_images
+        """
+        self.dumped_images = []
+
+        # trick
+        self.dump_image = False
+
+        # the image num is font num * text num
+        if self.image_file_dir is None:
+            for text in self.texts_for_font_image:
+                for font, font_path in zip(self.fonts, self.font_paths):
+                    image = self.create_image(text, font, font_path)
+                    self.dumped_images.append(image)
+        else:
+            for font, font_path in zip(self.fonts, self.font_paths):
+                image = self.create_image(None, font, font_path)
+                self.dumped_images.append(image)
+
+        self.dump_image = True
+
 
     def do_apotosis(self):
         """
@@ -563,40 +639,6 @@ class MyDataset(Dataset):
                 return int(count)
             return int(count * len(self.texts_for_font_image))
 
-    def create_image(self, text, font, font_path=None, no_preprocess=False, padding=0):
-        if self.image_file_dir:
-            assert font_path is not None
-            font_name = os.path.splitext(os.path.basename(font_path))[0]
-            image_file_path = os.path.join(self.image_file_dir, font_name + ".png")
-            image = Image.open(image_file_path)
-            image = my_convert_to_rgb(image)
-            image = self.preprocess(image)
-            return image
-
-        else:
-            if len(text) == 1:
-                width = self.char_size + int(padding) * 2
-                height = self.char_size + int(padding) * 2
-            else:
-                line_num = text.count("\n") + 1
-                if self.dump_image:
-                    width = (
-                        int((self.char_size * 0.66) * len(text) / line_num)
-                        + int(padding) * 2
-                    )
-                else:
-                    width = (
-                        int(self.char_size * len(text) * 1.8 / line_num)
-                        + int(padding) * 2
-                    )
-                height = int(self.char_size) * line_num + int(padding) * 2
-
-            image = draw_text_with_new_lines(text, font, width, height)
-            if no_preprocess:
-                return image
-
-            image = self.preprocess(image)
-            return image
 
     def __getitem__(self, idx):
         # Note that self.font_attribute_counts = len(self.font_paths) * self.sample_num_each_epoch if self.use_multiple_attributes else sum([len(v) for v in self.font_to_attributes.values()])
@@ -666,25 +708,6 @@ class MyDataset(Dataset):
 
     def set_font_text_to_image_tensors(self, font_text_to_image_tensors):
         self.font_text_to_image_tensors = font_text_to_image_tensors
-
-    def dump_image_tensor(self):
-        self.dumped_images = []
-
-        # trick
-        self.dump_image = False
-
-        # the image num is font num * text num
-        if self.image_file_dir is None:
-            for text in self.texts_for_font_image:
-                for font, font_path in zip(self.fonts, self.font_paths):
-                    image = self.create_image(text, font, font_path)
-                    self.dumped_images.append(image)
-        else:
-            for font, font_path in zip(self.fonts, self.font_paths):
-                image = self.create_image(None, font, font_path)
-                self.dumped_images.append(image)
-
-        self.dump_image = True
 
 
 class TestDataset(MyDataset):
@@ -829,7 +852,7 @@ class TestImageDataset(Dataset):
         if dump_image:
             self.dump_image_tensor()
 
-    def create_image(self, text, font, font_path=None, no_preprocess=False, padding=0):
+    def create_image(self, text, font, font_path=None, no_preprocess=False, padding=0)-> PIL.Image:
         if self.image_file_dir:
             assert font_path is not None
             font_name = os.path.splitext(os.path.basename(font_path))[0]
