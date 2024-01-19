@@ -158,7 +158,6 @@ class Trainer:
                 self.config.json_path,
                 texts_for_font_image=self.config.texts_for_font_image,
                 use_negative=self.config.use_negative,
-                use_score=self.config.use_score,
                 use_multiple_attributes=self.config.use_multiple_attributes,
                 use_random_attributes=self.config.use_random_attributes,
                 random_prompts_num=self.config.random_prompts_num,
@@ -197,37 +196,7 @@ class Trainer:
 
             val_datasets = None
             test_datasets = None
-            if dataset.use_score:
-                val_dataset = TestDataset(
-                    font_dir,
-                    tmp_validation_json_path,
-                    [self.config.texts_for_font_image[0]],
-                    target_attributes=tmp_inclusive_attributes,
-                    preprocess=preprocess,
-                    dump_image=self.config.tmp_dump_image,
-                    image_file_dir=self.config.image_file_dir_for_validation,
-                    single_character=self.config.single_character,
-                    use_score=self.config.use_score,
-                    char_size=self.config.test_char_size,
-                    context_length=self.config.context_length,
-                )
-                test_dataset = TestDataset(
-                    font_dir,
-                    tmp_test_json_path,
-                    [self.config.texts_for_font_image[0]],
-                    target_attributes=tmp_inclusive_attributes,
-                    preprocess=preprocess,
-                    dump_image=self.config.tmp_dump_image,
-                    image_file_dir=self.config.image_file_dir_for_validation,
-                    single_character=self.config.single_character,
-                    use_score=self.config.use_score,
-                    char_size=self.config.test_char_size,
-                    context_length=self.config.context_length,
-                )
-                print("val dataset font num: ", len(val_dataset.font_paths))
-                print("test dataset font num: ", len(test_dataset.font_paths))
-
-            elif self.config.use_fast_evaluator:
+            if self.config.use_fast_evaluator:
                 val_image_dataset = TestImageDataset(
                     font_dir,
                     tmp_validation_json_path,
@@ -473,12 +442,8 @@ class Trainer:
                     if self.config.use_coop_text or self.config.use_coop_vision:
                         coop_optimizer.zero_grad()
 
-                    weights = None
                     images_contrastive = None
-                    if dataset.use_score:
-                        images, texts, scores = batch
-                        scores = torch.tensor(scores, dtype=torch.float16)
-                    elif self.config.use_bce_loss:
+                    if self.config.use_bce_loss:
                         if self.config.use_contrastive_image_loss or self.config.use_triplet_image_loss:
                             (
                                 images,
@@ -536,8 +501,6 @@ class Trainer:
                                 logits_per_contrastive_image_1.t()
                             )
 
-                    elif dataset.use_score:
-                        logits = self.config.model(images, texts)
                     else:
                         if images_contrastive is not None:
                             image_features = self.config.model.encode_image(images)
@@ -577,20 +540,16 @@ class Trainer:
                         len(images), dtype=torch.long, device=device
                     )
 
-                    if dataset.use_score:
-                        scores = scores.to(device)
-                        total_loss = loss_mse(logits, scores)
+                    if self.config.use_bce_loss:
+                        total_loss = (
+                            loss_img(logits_per_image, mask_matrix)
+                            + loss_txt(logits_per_text, mask_matrix.T)
+                        ) / 2
                     else:
-                        if self.config.use_bce_loss:
-                            total_loss = (
-                                loss_img(logits_per_image, mask_matrix)
-                                + loss_txt(logits_per_text, mask_matrix.T)
-                            ) / 2
-                        else:
-                            total_loss = (
-                                loss_img(logits_per_image, ground_truth)
-                                + loss_txt(logits_per_text, ground_truth)
-                            ) / 2
+                        total_loss = (
+                            loss_img(logits_per_image, ground_truth)
+                            + loss_txt(logits_per_text, ground_truth)
+                        ) / 2
 
                     if self.config.use_contrastive_image_loss:
                         total_loss += (
@@ -647,37 +606,7 @@ class Trainer:
 
                 if (epoch + 1) % 1 == 0:
                     self.config.model.eval()
-                    if dataset.use_score:
-                        val_loss = self.config.evaluate_used_dumped_image_use_score(
-                            self.config.model, val_dataset
-                        )
-                        test_loss = self.config.evaluate_used_dumped_image_use_score(
-                            self.config.model, test_dataset
-                        )
-                        try:
-                            val_corr, _ = evaluate_use_dumped_image(
-                                self.config.model,
-                                val_datasets,
-                                tmp_inclusive_attributes,
-                                use_dense_clip=True,
-                            )
-                        except:
-                            print("val_corr error")
-                            val_corr = 0
-                        try:
-                            test_corr, _ = evaluate_use_dumped_image(
-                                self.config.model,
-                                test_datasets,
-                                tmp_inclusive_attributes,
-                                use_dense_clip=True,
-                            )
-                        except:
-                            print("test_corr error")
-                            test_corr = 0
-                        print(
-                            f"EPOCH: {epoch+1}, loss: {epoch_loss}, val_loss: {val_loss}, test_loss: {test_loss}, val_corr: {val_corr}, test_corr: {test_corr}"
-                        )
-                    elif self.config.task_for_validation:
+                    if self.config.task_for_validation:
                         val_attr_cr = evaluate_attribute_comparison_task_for_each_comparison(
                             tmp_validation_font_names,
                             self.config.vision_text,

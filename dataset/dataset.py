@@ -308,24 +308,23 @@ class MyDataset(Dataset):
         font_dir: str,
         json_path: str,
         texts_for_font_image: List[str],
-        image_file_dir: Optional[str]=None,
+        image_file_dir: Optional[str] = None,
         char_size: int = 250,
         attribute_threshold: int = 50,
         attribute_under_threshold: int = 50,
         use_negative: bool = False,
         use_multiple_attributes: bool = False,
-        use_random_attributes: bool = False,
+        use_random_attributes: bool = True,
         random_prompts_num: int = 1000,
         max_sample_num: int = 3,
         sample_num_each_epoch: int = 5,
         rich_prompt: bool = False,
         preprocess: Optional[Callable[[PIL.Image], torch.Tensor]] = None,
         dump_image: bool = False,
-        font_text_to_image_tensors: Optional[Dict[str, List[torch.Tensor]]]=None,
-        exclusive_attributes: Optional[List[str]]=None,
+        font_text_to_image_tensors: Optional[Dict[str, List[torch.Tensor]]] = None,
+        exclusive_attributes: Optional[List[str]] = None,
         single_character: bool = False,
-        use_score: bool = False,
-        geta: float = 0.5,
+        geta: float = 0.0,
         use_bce_loss: bool = False,
         context_length: int = 77,
     ):
@@ -356,7 +355,55 @@ class MyDataset(Dataset):
         use_negative : bool, optional
             use negative or not, by default False
             if use_negative is True, the negative attribute is used as well as positive attribute
-            
+        use_multiple_attributes : bool, optional
+            use multiple attributes or not, by default False
+            this parameter must be True
+        use_random_attributes : bool, optional
+            use random attributes or not, by default True
+            if use_random_attributes is True, the attributes are randomly sampled from the attributes
+        random_prompts_num : int, optional
+            random prompts num, by default 1000
+            the number of random prompts for each font
+        max_sample_num : int, optional
+            max sample num, by default 3
+            the max sample num of attributes for each prompt
+        sample_num_each_epoch : int, optional
+            sample num each epoch, by default 5
+            the number of samples for each font
+        rich_prompt : bool, optional
+            rich prompt or not, by default False
+            if rich_prompt is True, the prompt is like "very bold font"
+        preprocess : Optional[Callable[[PIL.Image], torch.Tensor]], optional
+            preprocess, by default None
+            preprocess is used to preprocess font image for inputting to CLIP
+            if preprocess is None, the default preprocess is used
+        dump_image : bool, optional
+            dump image or not, by default False
+            if dump_image is True, dump images to self.dumped_images
+            self.dumped_images is used if self.font_text_to_image_tensors is None
+        font_text_to_image_tensors : Optional[Dict[str, List[torch.Tensor]]], optional
+            font text to image tensors, by default None
+            if font_text_to_image_tensors is not None, the image tensors are used for training
+            if font_text_to_image_tensors is None, the image tensors are created by rendering font to images
+        exclusive_attributes : Optional[List[str]], optional
+            exclusive attributes, by default None
+            if exclusive_attributes is not None, the attributes are not used
+        single_character : bool, optional
+            single character or not, by default False
+            if single_character is True, the prompt is like "a photo of a character in a bold font"
+        geta: float, optional
+            geta, by default 0.0
+            geta is added to the attribute score for calculating the probability of each attribute
+            this parameter is used to balance the probability
+        use_bce_loss : bool, optional
+            use bce loss or not, by default False
+            if use_bce_loss is True, the dataset returns font_idx, signed_attribute_indices, and tokenized_prompt for calculating mask matrix as the weight of BCELoss in training
+        context_length : int, optional
+            context length, by default 77
+            the context length of the tokenized prompt
+            default CLIP context length is 77, but if we use CoOp, the context length depends on the length of the CoOp tokens
+
+
         """
         # TODO: refactor the redundant code ex. separate some parameters to another class like DatasetConfig
         self.char_size = char_size
@@ -364,7 +411,6 @@ class MyDataset(Dataset):
         self.json_path = json_path
         self.texts_for_font_image = texts_for_font_image
         self.use_negative = use_negative
-        self.use_score = use_score
         self.use_multiple_attributes = use_multiple_attributes
         self.use_random_attributes = use_random_attributes
         self.random_prompts_num = random_prompts_num
@@ -381,10 +427,13 @@ class MyDataset(Dataset):
         self.rich_prompt = rich_prompt
         self.single_character = single_character
         self.use_bce_loss = use_bce_loss
-        self.font_idx_signed_attribute_matrix = None
         self.context_length = context_length
+        self.geta = geta
+        self.font_idx_signed_attribute_matrix = None
 
-        assert (not self.dump_image) or (self.font_text_to_image_tensors is None)
+        assert (not self.dump_image) or (
+            self.font_text_to_image_tensors is None
+        ), "dump_image and font_text_to_image_tensors cannot be True at the same time"
 
         if self.json_path is None:
             print("No json path, use predict mode.")
@@ -412,12 +461,12 @@ class MyDataset(Dataset):
                             and (float(v_v) < attribute_under_threshold)
                         ]
                         p = [
-                            float(v_v) / 100
+                            float(v_v) / 100 + self.geta
                             for a, v_v in v.items()
                             if (a not in self.exclusive_attributes)
                             and (float(v_v) >= self.attribute_threshold)
                         ] + [
-                            1 - float(v_v) / 100
+                            1 - float(v_v) / 100 + self.geta
                             for a, v_v in v.items()
                             if (a not in self.exclusive_attributes)
                             and (float(v_v) < attribute_under_threshold)
@@ -430,16 +479,14 @@ class MyDataset(Dataset):
                             and (float(v_v) >= self.attribute_threshold)
                         ]
                         p = [
-                            float(v_v) / 100
+                            float(v_v) / 100 + self.geta
                             for a, v_v in v.items()
                             if (a not in self.exclusive_attributes)
                             and (float(v_v) >= self.attribute_threshold)
                         ]
 
-                    # tmp = [tokenize(self.generate_multiple_attributes_prompt([attribute], use_random=False)) for attribute in tmp_attributes]
                     tmp = []
                     tmp_attribute_indices = []
-                    # tmp = [self.generate_multiple_attributes_prompt([attribute], use_random=False) for attribute in tmp_attributes]
                     if self.use_random_attributes:
                         # normalize p
                         p = [p_i / sum(p) for p_i in p]
@@ -460,58 +507,10 @@ class MyDataset(Dataset):
                     self.font_to_attributes[k] = tmp
                     self.font_to_attribute_indices[k] = tmp_attribute_indices
             else:
-                # TODO: add row text to self.font_to_attributes_row
-                for k, v in tmp_font_to_attribute_values.items():
-                    tmp = []
-                    for a, v_v in v.items():
-                        if a in self.exclusive_attributes:
-                            continue
-                        if self.rich_prompt:
-                            tmp.append(
-                                tokenize(
-                                    self.generate_prompt(
-                                        a,
-                                        rich=True,
-                                        score=float(v_v),
-                                    ),
-                                    context_length=self.context_length,
-                                )
-                            )
-                        else:
-                            if float(v_v) >= self.attribute_threshold:
-                                tmp.append(
-                                    tokenize(
-                                        self.generate_prompt(
-                                            a,
-                                            single_character=self.single_character,
-                                        ),
-                                        context_length=self.context_length,
-                                    )
-                                )
-                                # tmp.append(self.generate_prompt(a, single_character=self.single_character))
-                            elif float(v_v) <= attribute_under_threshold:
-                                tmp.append(
-                                    tokenize(
-                                        self.generate_prompt(
-                                            a,
-                                            negative=self.use_negative,
-                                            single_character=self.single_character,
-                                        ),
-                                        context_length=self.context_length,
-                                    )
-                                )
-                                # tmp.append(self.generate_prompt(a, negative=self.use_negative, single_character=self.single_character))
-                    self.font_to_attributes[k] = tmp
+                raise ValueError("use_multiple_attributes must be True")
             self.attribute_kind_num = len(
                 self.font_to_attributes[list(self.font_to_attributes.keys())[0]]
             )
-
-            self.font_to_attribute_scores = None
-            if use_score:
-                self.font_to_attribute_scores = {
-                    k: [float(v_v) / 100 for a, v_v in v.items()]
-                    for k, v in tmp_font_to_attribute_values.items()
-                }
 
         # if font_dir is list
         if isinstance(font_dir, list):
@@ -555,14 +554,14 @@ class MyDataset(Dataset):
                 * len(self.texts_for_font_image)
                 * self.sample_num_each_epoch
             )
-
-        count = 0
-        for font_path in self.font_paths:
-            font_name = os.path.splitext(os.path.basename(font_path))[0]
-            count += len(self.font_to_attributes[font_name])
-        if self.image_file_dir is not None:
-            return int(count)
-        return int(count * len(self.texts_for_font_image))
+        else:
+            count = 0
+            for font_path in self.font_paths:
+                font_name = os.path.splitext(os.path.basename(font_path))[0]
+                count += len(self.font_to_attributes[font_name])
+            if self.image_file_dir is not None:
+                return int(count)
+            return int(count * len(self.texts_for_font_image))
 
     def create_image(self, text, font, font_path=None, no_preprocess=False, padding=0):
         if self.image_file_dir:
@@ -651,11 +650,6 @@ class MyDataset(Dataset):
             else:
                 image = self.create_image(text, font, font_path)
 
-        if self.use_score:
-            score = self.font_to_attribute_scores[font_name][attribute_idx]
-            return image, tokenized_prompt.squeeze(0), score
-
-
         if self.use_multiple_attributes and self.use_bce_loss:
             attribute_indices = self.font_to_attribute_indices[font_name][attribute_idx]
             # unsinged_attribute_idx = [tmp_attribute_idx - 1 if tmp_attribute_idx <= len(all_attributes) else len(all_attributes)*2+1 - tmp_attribute_idx - 1 for tmp_attribute_idx in attribute_indices]
@@ -706,7 +700,6 @@ class TestDataset(MyDataset):
         dump_image=False,
         image_file_dir=None,
         single_character=False,
-        use_score=False,
         context_length=77,
     ):
         super().__init__(
@@ -719,7 +712,6 @@ class TestDataset(MyDataset):
             dump_image=False,
             image_file_dir=image_file_dir,
             single_character=single_character,
-            use_score=use_score,
             context_length=context_length,
         )
         if self.predict_mode:
