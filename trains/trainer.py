@@ -158,7 +158,6 @@ class Trainer:
                 self.config.json_path,
                 texts_for_font_image=self.config.texts_for_font_image,
                 use_negative=self.config.use_negative,
-                use_weight=self.config.use_weight,
                 use_score=self.config.use_score,
                 use_multiple_attributes=self.config.use_multiple_attributes,
                 use_random_attributes=self.config.use_random_attributes,
@@ -479,10 +478,6 @@ class Trainer:
                     if dataset.use_score:
                         images, texts, scores = batch
                         scores = torch.tensor(scores, dtype=torch.float16)
-                    elif dataset.use_weight:
-                        images, texts, weights = batch
-                        # to Half torch tensor
-                        weights = torch.tensor(weights, dtype=torch.float16)
                     elif self.config.use_bce_loss:
                         if self.config.use_contrastive_image_loss or self.config.use_triplet_image_loss:
                             (
@@ -585,14 +580,6 @@ class Trainer:
                     if dataset.use_score:
                         scores = scores.to(device)
                         total_loss = loss_mse(logits, scores)
-                    elif dataset.use_weight:
-                        weights = weights.to(device)
-                        loss_img = nn.CrossEntropyLoss(weight=weights)
-                        loss_txt = nn.CrossEntropyLoss(weight=weights)
-                        total_loss = (
-                            loss_img(logits_per_image, ground_truth)
-                            + loss_txt(logits_per_text, ground_truth)
-                        ) / 2
                     else:
                         if self.config.use_bce_loss:
                             total_loss = (

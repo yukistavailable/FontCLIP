@@ -1,10 +1,11 @@
 import gc
 import json
 import os
+import PIL
 from PIL import Image, ImageFont
 import random
 from tqdm import tqdm
-from typing import Union, List, Optional, Tuple
+from typing import Union, List, Optional, Tuple, Callable, Dict
 import string
 
 
@@ -304,41 +305,67 @@ class MyDataset(Dataset):
 
     def __init__(
         self,
-        font_dir,
-        json_path,
-        texts_for_font_image,
-        char_size=250,
-        attribute_threshold=50,
-        attribute_under_threshold=50,
-        use_negative=False,
-        use_weight=False,
-        use_multiple_attributes=False,
-        use_random_attributes=False,
-        random_prompts_num=1000,
-        max_sample_num=3,
-        sample_num_each_epoch=5,
-        rich_prompt=False,
-        preprocess=None,
-        dump_image=False,
-        font_text_to_image_tensors=None,
-        exclusive_attributes=None,
-        image_file_dir=None,
-        single_character=False,
-        use_score=False,
-        geta=0.5,
-        use_bce_loss=False,
-        context_length=77,
+        font_dir: str,
+        json_path: str,
+        texts_for_font_image: List[str],
+        image_file_dir: Optional[str]=None,
+        char_size: int = 250,
+        attribute_threshold: int = 50,
+        attribute_under_threshold: int = 50,
+        use_negative: bool = False,
+        use_multiple_attributes: bool = False,
+        use_random_attributes: bool = False,
+        random_prompts_num: int = 1000,
+        max_sample_num: int = 3,
+        sample_num_each_epoch: int = 5,
+        rich_prompt: bool = False,
+        preprocess: Optional[Callable[[PIL.Image], torch.Tensor]] = None,
+        dump_image: bool = False,
+        font_text_to_image_tensors: Optional[Dict[str, List[torch.Tensor]]]=None,
+        exclusive_attributes: Optional[List[str]]=None,
+        single_character: bool = False,
+        use_score: bool = False,
+        geta: float = 0.5,
+        use_bce_loss: bool = False,
+        context_length: int = 77,
     ):
+        """
+        Parameters
+        ----------
+        font_dir : str
+            font directory
+        json_path : str
+            json path
+            in the json file, the key is font name and the value is attribute scores
+        texts_for_font_image : List[str]
+            texts for font image
+            if image_file_dir is not None, this parameter is ignored
+        image_file_dir : Optional[str], optional
+            image file directory, by default None
+            in the image file directory, the file name is font name and the file is rendered font image
+        char_size : int, optional
+            char size, by default 250
+            the char size to render font image
+            if image_file_dir is not None, this parameter is ignored
+        attribute_threshold : int, optional
+            attribute threshold, by default 50
+            if the attribute score is more than attribute_threshold, the attribute is used as positive attribute like "bold"
+        attribute_under_threshold : int, optional
+            attribute under threshold, by default 50
+            if the attribute score is less than attribute_under_threshold, the attribute is used as negative attribute like "not bold"
+        use_negative : bool, optional
+            use negative or not, by default False
+            if use_negative is True, the negative attribute is used as well as positive attribute
+            
+        """
+        # TODO: refactor the redundant code ex. separate some parameters to another class like DatasetConfig
         self.char_size = char_size
         self.attribute_threshold = attribute_threshold
         self.json_path = json_path
         self.texts_for_font_image = texts_for_font_image
         self.use_negative = use_negative
-        self.use_weight = use_weight
         self.use_score = use_score
         self.use_multiple_attributes = use_multiple_attributes
-        if self.use_multiple_attributes:
-            self.use_weight = False
         self.use_random_attributes = use_random_attributes
         self.random_prompts_num = random_prompts_num
         self.max_sample_num = max_sample_num
@@ -485,27 +512,6 @@ class MyDataset(Dataset):
                     k: [float(v_v) / 100 for a, v_v in v.items()]
                     for k, v in tmp_font_to_attribute_values.items()
                 }
-            if self.use_negative:
-                if self.use_weight:
-                    self.font_to_attribute_weights = {
-                        k: [
-                            float(v_v) / 100 + geta
-                            if float(v_v) >= self.attribute_threshold
-                            else 1 - float(v_v) / 100 + geta
-                            for a, v_v in v.items()
-                        ]
-                        for k, v in tmp_font_to_attribute_values.items()
-                    }
-            else:
-                if self.use_weight:
-                    self.font_to_attribute_weights = {
-                        k: [
-                            float(v_v) / 100 - self.attribute_threshold / 100
-                            for a, v_v in v.items()
-                        ]
-                        for k, v in tmp_font_to_attribute_values.items()
-                        if k not in self.exclusive_attributes
-                    }
 
         # if font_dir is list
         if isinstance(font_dir, list):
@@ -649,9 +655,6 @@ class MyDataset(Dataset):
             score = self.font_to_attribute_scores[font_name][attribute_idx]
             return image, tokenized_prompt.squeeze(0), score
 
-        if self.use_weight:
-            weight = self.font_to_attribute_weights[font_name][attribute_idx]
-            return image, tokenized_prompt.squeeze(0), weight
 
         if self.use_multiple_attributes and self.use_bce_loss:
             attribute_indices = self.font_to_attribute_indices[font_name][attribute_idx]
