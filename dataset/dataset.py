@@ -5,20 +5,17 @@ import PIL
 from PIL import Image, ImageFont
 import random
 from tqdm import tqdm
-from typing import Union, List, Optional, Tuple, Callable, Dict
-import string
+from typing import List, Optional, Tuple, Callable, Dict
 
 
 import numpy as np
 import torch
 from torch.utils.data import Dataset
-from torchvision.transforms.functional import to_pil_image, to_tensor, pil_to_tensor
+from torchvision.transforms.functional import to_pil_image, pil_to_tensor
 
 from utils.tokenizer import tokenize
 from models.init_model import (
     my_preprocess,
-    preprocess_for_aug,
-    preprocess_for_normalize,
     model,
 )
 from utils.initialize_font_data import all_attributes
@@ -26,7 +23,6 @@ from utils.transform_image import (
     my_transform,
     my_convert_to_rgb,
     draw_text_with_new_lines,
-    transform_for_resize,
 )
 
 
@@ -852,7 +848,25 @@ class TestImageDataset(Dataset):
         if dump_image:
             self.dump_image_tensor()
 
-    def create_image(self, text, font, font_path=None, no_preprocess=False, padding=0)-> PIL.Image:
+    # TODO: integrate with MyDataset
+    def create_image(self, text: str, font: PIL.Image.Font, font_path: Optional[str]=None, no_preprocess: bool=False, padding: int=0) -> PIL.Image:
+        """
+        Render font image given text and font
+        
+        Parameters
+        ----------
+        text : str
+            text to render
+        font : PIL.Image.Font
+            font to render
+        font_path : Optional[str], optional
+            font path, by default None
+        no_preprocess : bool, optional
+            no preprocess or not, by default False
+            if no_preprocess is True, the image is not preprocessed
+        padding : int, optional
+            padding, by default 0
+        """
         if self.image_file_dir:
             assert font_path is not None
             font_name = os.path.splitext(os.path.basename(font_path))[0]
@@ -887,7 +901,11 @@ class TestImageDataset(Dataset):
             image = self.preprocess(image)
             return image
 
-    def dump_image_tensor(self):
+    # TODO: integrate with MyDataset
+    def dump_image_tensor(self) -> None:
+        """
+        store font image tensors to self.dumped_images
+        """
         self.dumped_images = []
         # trick
         self.dump_image = False
@@ -938,10 +956,10 @@ class TestTextDataset(Dataset):
 
 def set_image_tensors(
     dataset: MyDataset,
-    preprocess=my_preprocess,
-    sample_num=5,
-    padding=0,
-    color_jitter_sample_num=0,
+    preprocess: Callable[[PIL.Image], torch.Tensor]=my_preprocess,
+    sample_num: int=5,
+    padding: int=0,
+    color_jitter_sample_num: int=0,
 ):
     color_jitter_preprocess = my_transform(do_color_jitter=True)
     dataset.set_preprocess(preprocess)
