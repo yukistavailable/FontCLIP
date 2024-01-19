@@ -16,15 +16,15 @@ all_json_path = os.path.join(
     BASE_DIR, "attributeData/all_font_to_attribute_values.json"
 )
 train_json_path = os.path.join(
-    BASE_DIR, "attributeData/train_font_to_attribute_values_5.json"
+    BASE_DIR, "attributeData/train_font_to_attribute_values_cross_validation_5_0.json"
     #BASE_DIR, "attributeData/train.json"
 )
 test_json_path = os.path.join(
-    BASE_DIR, "attributeData/test_font_to_attribute_values_5.json"
+    BASE_DIR, "attributeData/test_font_to_attribute_values_cross_validation_5_0.json"
     #BASE_DIR, "attributeData/test.json"
 )
 validation_json_path = os.path.join(
-    BASE_DIR, "attributeData/validation_font_to_attribute_values_5.json"
+    BASE_DIR, "attributeData/validation_font_to_attribute_values_cross_validation_5_0.json"
     #BASE_DIR, "attributeData/validation.json"
 )
 all_gwfonts_json_path = os.path.join(
@@ -36,9 +36,6 @@ train_all_gwfonts_json_path = os.path.join(
 val_all_gwfonts_json_path = os.path.join(
     BASE_DIR, "attributeData/val_all_gwfonts.json"
 )
-unlabeled_predicted_attributes_json_path = os.path.join(
-    BASE_DIR, "attributeData/predicted_unlabeled_attributes.json"
-)
 one_leave_out_json_path = os.path.join(BASE_DIR, "attributeData/one_leave_out.json")
 all_json = json.load(open(all_json_path, "r"))
 train_json = json.load(open(train_json_path, "r"))
@@ -47,14 +44,12 @@ validation_json = json.load(open(validation_json_path, "r"))
 all_gwfonts_json = json.load(open(all_gwfonts_json_path, "r"))
 train_all_gwfonts_json = json.load(open(train_all_gwfonts_json_path, "r"))
 val_all_gwfonts_json = json.load(open(val_all_gwfonts_json_path, "r"))
-unlabeled_predicted_attributes_json = json.load(open(unlabeled_predicted_attributes_json_path, "r"))
 train_font_names = list(train_json.keys())
 test_font_names = list(test_json.keys())
 validation_font_names = list(validation_json.keys())
 all_font_names = list(all_json.keys())
 font_names = list(all_json.keys())
 all_gwfonts_names = list(all_gwfonts_json.keys())
-unlabeled_font_names = list(unlabeled_predicted_attributes_json.keys())
 
 
 def retrieve_font_path(font_name: str, font_dir: str = cj_font_dir) -> str:

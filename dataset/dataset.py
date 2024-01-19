@@ -282,7 +282,7 @@ class MyDataset(Dataset):
                 tmp_font_attribute_counts += len(attribute_values)
             self.font_attribute_counts = tmp_font_attribute_counts
 
-    def create_image(self, text: str, font: PIL.Image.Font, font_path: Optional[str]=None, no_preprocess: bool=False, padding: int=0) -> PIL.Image:
+    def create_image(self, text: str, font: PIL.ImageFont, font_path: Optional[str]=None, no_preprocess: bool=False, padding: int=0) -> PIL.Image:
         """
         Render font image given text and font
         
@@ -290,7 +290,7 @@ class MyDataset(Dataset):
         ----------
         text : str
             text to render
-        font : PIL.Image.Font
+        font : PIL.ImageFont
             font to render
         font_path : Optional[str], optional
             font path, by default None
@@ -849,7 +849,7 @@ class TestImageDataset(Dataset):
             self.dump_image_tensor()
 
     # TODO: integrate with MyDataset
-    def create_image(self, text: str, font: PIL.Image.Font, font_path: Optional[str]=None, no_preprocess: bool=False, padding: int=0) -> PIL.Image:
+    def create_image(self, text: str, font: PIL.ImageFont, font_path: Optional[str]=None, no_preprocess: bool=False, padding: int=0) -> PIL.Image:
         """
         Render font image given text and font
         
@@ -857,7 +857,7 @@ class TestImageDataset(Dataset):
         ----------
         text : str
             text to render
-        font : PIL.Image.Font
+        font : PIL.ImageFont
             font to render
         font_path : Optional[str], optional
             font path, by default None

@@ -3,10 +3,8 @@ from models.oft import OFTConfig
 from models.lora import LoRAConfig
 from trains.trainer import Trainer
 from utils.initialize_font_data import (
-    gray_scale_image_file_dir,
     fox_text_four_lines,
     all_gray_scale_image_file_dir,
-    fox_text,
 )
 
 if __name__ == "__main__":
@@ -18,11 +16,6 @@ if __name__ == "__main__":
     char_size = 250
     test_char_size = 60
     texts_for_font_image = [fox_text_four_lines]
-    use_unlabeled_data = False
-    unlabeled_sampling_ratio = 0.25
-    unlabeled_sampling_ratios = [0.1, 0.2, 0.3, 0.4]
-    unlabeled_sample_num = 100
-    unlabeled_random_prompts_num = 5000
     image_file_dir = None
     image_file_dir_for_validation = None
     image_file_dir = all_gray_scale_image_file_dir
@@ -30,8 +23,6 @@ if __name__ == "__main__":
     trained_model_num = 1
     do_optimize = True
     do_profile = False
-    task_for_validation = False
-    do_cross_validation = True
     use_multiple_attributes = True
     max_sampled_attributes_num = 3
     max_sampled_attributes_nums = [4, 5, 6]
@@ -48,10 +39,9 @@ if __name__ == "__main__":
     use_color_jitter = True
     color_jitter_sample_num = 1
     lr = 2e-5
+    lr = 2e-4 # for lora
     lr_schedular_end_factor = 0.1
     use_bce_loss = True
-    use_contrastive_image_loss = False
-    contrastive_image_loss_weight = 0.1
     use_triplet_image_loss = False
     triplet_image_loss_weight = 1.0
     triplet_image_loss_margin = 0.05
@@ -68,13 +58,6 @@ if __name__ == "__main__":
         color_jitter_sample_num = 1
         trained_model_num = 5
         do_optimize = False
-        task_for_validation = True
-        do_cross_validation = True
-
-    train_only_visual_encoder = False
-    use_same_text_for_each_pair = False
-    if train_only_visual_encoder:
-        use_single_character = False
 
     # OFT
     oft_lr = 2e-4
@@ -149,10 +132,6 @@ if __name__ == "__main__":
     pt_applied_layers = [0]
     # pt_applied_layers = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11]
 
-    use_chopped_clip = False
-    chopped_clip_vision_layers = None
-    chopped_clip_text_layers = 3
-
     negative_loss_weights = [0.0, 1e-3, 1e-4, 1e-5, 1e-6]
     negative_loss_weight = 1e-6
     lower_bound_of_scales = [0.5, 0.7, 0.9]
@@ -163,19 +142,10 @@ if __name__ == "__main__":
     # for lr in lrs:
     # for triplet_image_loss_weight in [0.1, 0.01, 0.2, 0.3]:
     if True:
-        # for unlabeled_sampling_ratio in unlabeled_sampling_ratios:
         # for max_sampled_attributes_num in max_sampled_attributes_nums:
         # for lower_bound_of_scale in lower_bound_of_scales:
         result = []
         for i in range(0, trained_model_num):
-            signature = f"cv_5_4_ViT-B_32_bce_loss_9101191011_batch64_aug250_lower_bound_of_scale0.35_max_attribute_num_3_random_prompts_num_70000_use_negative_lr2e-05-0.1_image_file_dir"
-            signature = f"cv_5_{i}_ViT-B_32_bce_coop_precontext_length48_lr0.0001_91011_batch64_aug250_lbound_of_scale0.35_max_attr_num_3_random_p_num_70000_geta0.2_use_negative_lr2e-05-0.1_image_file_dir"
-            signature = f"cv_5_{i}_ViT-B_32_bce_lora_t-qkvo_256-1024.0_91011_batch64_aug10_lbound_of_scale0.35_max_attr_num_3_random_p_num_100_geta0.2_use_negative_til1.0_lr2e-05-0.1_image_file_dir"
-            signature = f"cv_5_{i}_ViT-B_32_bce_lora_t-qkvo_256-1024.0_91011_batch64_aug250_lbound_of_scale0.35_max_attr_num_3_random_p_num_70000_geta0.2_use_negative_til1.0_lr2e-05-0.1_image_file_dir"
-            signature = f"cv_5_{i}_ViT-B_32_bce_9101191011_batch64_aug250_lbound_of_scale0.35_max_attr_num_3_random_p_num_70000_geta0.2_use_negative_til0.2_lr2e-05-0.1_image_file_dir"
-            signature = f"cv_5_{i}_ViT-B_32_bce_lora_t-qkvo_256-1024.0_91011_batch64_aug250_lbound_of_scale0.35_max_attr_num_3_random_p_num_70000_geta0.2_use_negative_til1.0_lr2e-05-0.1_image_file_dir"
-            signature = f"cv_5_{i}_ViT-B_32_bce_lora_t-qkvo_256-1024.0_91011_batch64_aug10_lbound_of_scale0.35_max_attr_num_3_random_p_num_100_geta0.2_use_negative_lr2e-05-0.1_image_file_dir"
-            signature = f"cv_5_{i}_ViT-B_32_bce_lora_t-qkvo_256-1024.0_91011_batch64_aug50_cj200_lbound_of_scale0.35_max_attr_num_3_random_p_num_70000_geta0.2_use_negative_lr2e-05-0.1_image_file_dir"
             signature = f"cv_5_{i}_ViT-B_32_bce_lora_t-qkvo_256-1024.0_91011_batch64_aug50_cj400_lbound_of_scale0.35_max_attr_num_3_random_p_num_10000_geta0.2_use_negative_lr2e-05-0.1_image_file_dir"
 
             checkpoint_path = f"model_checkpoints/{signature}.pt"
@@ -186,16 +156,11 @@ if __name__ == "__main__":
                 use_unpretrained_model=use_unpretrained_model,
                 EPOCH=EPOCH,
                 BATCH_SIZE=BATCH_SIZE,
-                use_unlabeled_data=use_unlabeled_data,
-                unlabeled_sampling_ratio=unlabeled_sampling_ratio,
-                unlabeled_sample_num=unlabeled_sample_num,
-                unlabeled_random_prompts_num=unlabeled_random_prompts_num,
                 char_size=char_size,
                 test_char_size=test_char_size,
                 image_file_dir=image_file_dir,
                 image_file_dir_for_validation=image_file_dir_for_validation,
                 do_optimize=do_optimize,
-                do_cross_validation=do_cross_validation,
                 do_profile=do_profile,
                 use_multiple_attributes=use_multiple_attributes,
                 checkpoint_path=checkpoint_path,
@@ -206,34 +171,19 @@ if __name__ == "__main__":
                 use_color_jitter=use_color_jitter,
                 color_jitter_sample_num=color_jitter_sample_num,
                 use_bce_loss=use_bce_loss,
-                use_contrastive_image_loss=use_contrastive_image_loss,
-                contrastive_image_loss_weight=contrastive_image_loss_weight,
-                use_triplet_image_loss=use_triplet_image_loss,
-                triplet_image_loss_weight=triplet_image_loss_weight,
-                triplet_image_loss_margin=triplet_image_loss_margin,
                 use_negative=use_negative,
-                use_negative_loss=use_negative_loss,
-                negative_loss_weight=negative_loss_weight,
                 max_sample_num=max_sampled_attributes_num,
                 random_prompts_num=random_prompt_num_per_font,
                 sample_num_each_epoch=num_of_prompt_per_font_per_epoch,
                 sample_num=sample_num,
-                task_for_validation=task_for_validation,
                 model_name=model_name,
                 use_single_character=use_single_character,
-                train_only_visual_encoder=train_only_visual_encoder,
-                use_same_text_for_each_pair=use_same_text_for_each_pair,
-                use_chopped_clip=use_chopped_clip,
-                chopped_clip_vision_layers=chopped_clip_vision_layers,
-                chopped_clip_text_layers=chopped_clip_text_layers,
-                oft_lr=oft_lr,
                 use_oft_vision=use_oft_vision,
                 use_oft_text=use_oft_text,
                 oft_config_vision=oft_config_vision,
                 oft_config_text=oft_config_text,
                 use_lora_vision=use_lora_vision,
                 use_lora_text=use_lora_text,
-                lora_lr=lora_lr,
                 lora_config_vision=lora_config_vision,
                 lora_config_text=lora_config_text,
                 use_coop_text=use_coop_text,
@@ -248,7 +198,6 @@ if __name__ == "__main__":
                 texts_for_font_image=texts_for_font_image,
                 start_index_for_train_model=i,
                 trained_model_num=trained_model_num,
-                use_fast_evaluator=True,
                 geta=geta,
             )
             trainer = Trainer(config)
