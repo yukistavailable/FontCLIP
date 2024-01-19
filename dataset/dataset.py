@@ -204,29 +204,16 @@ class MyDataset(Dataset):
             signed_attribute_indices,
         )
 
-    def do_apotosis(self):
-        if hasattr(self, "font_text_to_image_tensors"):
-            del self.font_text_to_image_tensors
-
-        if hasattr(self, "font_text_to_unnormalized_image_tensors"):
-            del self.font_text_to_unnormalized_image_tensors
-
-        if hasattr(self, "font_to_attributes"):
-            del self.font_to_attributes
-
-        if hasattr(self, "font_to_attribute_values"):
-            del self.font_to_attribute_values
-
-        if hasattr(self, "font_to_attribute_indices"):
-            del self.font_to_attribute_indices
-
-        gc.collect()
-
-    def create_font_idx_signed_attribute_matrix(self):
+    def create_font_idx_signed_attribute_matrix(self) -> torch.Tensor:
         """
         create font_idx_signed_attribute_matrix
         The matrix shape is (font_num, attribute_num * 2 + 1)
         The value of each element is 1 or -1, and the value of the element is 1 if the font has the attribute above threshold, otherwise -1.
+
+        Returns
+        -------
+        torch.Tensor
+            font_idx_signed_attribute_matrix
         """
         font_idx_signed_attribute_matrix = torch.zeros(
             (len(self.font_paths), len(all_attributes) * 2 + 1), dtype=torch.float32
@@ -246,50 +233,26 @@ class MyDataset(Dataset):
                         font_idx_signed_attribute_matrix[i][-(j + 1)] = 1
         return font_idx_signed_attribute_matrix
 
-    # TODO: make it faster
-    def mask_font_idx_signed_attribute_matrix(
-        self, font_indices, signed_attribute_indices
-    ):
-        assert len(font_indices) == len(signed_attribute_indices)
-        mask_matrix = torch.ones(
-            (len(font_indices), len(font_indices)), dtype=torch.float32
-        )
-        for i, font_index in enumerate(font_indices):
-            for j, signed_attribute_index in enumerate(signed_attribute_indices):
-                for signed_attribute_idx in signed_attribute_index:
-                    if (
-                        self.font_idx_signed_attribute_matrix[font_index][
-                            signed_attribute_idx
-                        ]
-                        == 1
-                    ):
-                        mask_matrix[i][j] = 0
-                        break
-        return mask_matrix
-
-    def mask_font_idx_signed_attribute_matrix_ground_truth(
-        self, font_indices, signed_attribute_indices
-    ):
-        assert len(font_indices) == len(signed_attribute_indices)
-        mask_matrix = torch.ones(
-            (len(font_indices), len(font_indices)), dtype=torch.float32
-        )
-        for i, font_index in enumerate(font_indices):
-            for j, signed_attribute_index in enumerate(signed_attribute_indices):
-                for signed_attribute_idx in signed_attribute_index:
-                    if (
-                        self.font_idx_signed_attribute_matrix[font_index][
-                            signed_attribute_idx
-                        ]
-                        == -1
-                    ):
-                        mask_matrix[i][j] = 0
-                        break
-        return mask_matrix
-
     def mask_font_idx_signed_attribute_matrix_ground_truth_fast(
         self, font_indices, signed_attribute_indices
-    ):
+    ) -> torch.Tensor:
+        """
+        Create a mask matrix for the weight of BCEWithLogitsLoss function.
+        Detail of the loss function https://pytorch.org/docs/stable/generated/torch.nn.BCEWithLogitsLoss.html#torch.nn.BCEWithLogitsLoss
+
+        Parameters
+        ----------
+        font_indices : List[int]
+            font indices ex. [102, 1, 52, 37]
+        signed_attribute_indices : List[List[int]]
+            signed attribute indices ex. [[24, 18, 25], [32, 61, 2], [2, 56, 45], [44, 58, 15]]
+
+        Returns
+        -------
+        torch.Tensor
+            mask matrix
+            the i-th row and j-th column of the matrix is 0 if the i-th font does not has any of the j-th signed attributes, otherwise 1
+        """
         assert len(font_indices) == len(signed_attribute_indices)
 
         # Pre-allocate the mask matrix
@@ -309,7 +272,8 @@ class MyDataset(Dataset):
 
         return mask_matrix
 
-    def update_font_attribute_counts(self):
+    def update_font_attribute_counts(self) -> None:
+        """ """
         if self.use_multiple_attributes:
             self.font_attribute_counts = (
                 len(self.font_paths) * self.sample_num_each_epoch
@@ -320,12 +284,30 @@ class MyDataset(Dataset):
                 tmp_font_attribute_counts += len(attribute_values)
             self.font_attribute_counts = tmp_font_attribute_counts
 
+    def do_apotosis(self):
+        """
+        delete unnecessary attributes of the instance
+        """
+        if hasattr(self, "font_text_to_image_tensors"):
+            del self.font_text_to_image_tensors
+
+        if hasattr(self, "font_to_attributes"):
+            del self.font_to_attributes
+
+        if hasattr(self, "font_to_attribute_values"):
+            del self.font_to_attribute_values
+
+        if hasattr(self, "font_to_attribute_indices"):
+            del self.font_to_attribute_indices
+
+        gc.collect()
+
     def __init__(
         self,
         font_dir,
         json_path,
         texts_for_font_image,
-        char_size=150,
+        char_size=250,
         attribute_threshold=50,
         attribute_under_threshold=50,
         use_negative=False,
@@ -344,13 +326,7 @@ class MyDataset(Dataset):
         single_character=False,
         use_score=False,
         geta=0.5,
-        use_negative_loss=False,
-        use_contrastive_image_loss=False,
-        use_vae_loss=False,
-        vae_target_characters=string.ascii_uppercase,
-        vae_target_characters_size=64,
-        store_unnormalized_image=False,
-        n_px_of_unnormalized_image=224,
+        use_bce_loss=False,
         context_length=77,
     ):
         self.char_size = char_size
@@ -377,15 +353,8 @@ class MyDataset(Dataset):
         self.image_file_dir = image_file_dir
         self.rich_prompt = rich_prompt
         self.single_character = single_character
-        self.use_negative_loss = use_negative_loss
-        self.use_contrastive_image_loss = use_contrastive_image_loss
-        self.use_vae_loss = use_vae_loss
-        self.vae_target_characters = vae_target_characters
-        self.vae_target_character_size = vae_target_characters_size
-        self.store_unnormalized_image = store_unnormalized_image
-        self.n_px_of_unnormalized_image = n_px_of_unnormalized_image
+        self.use_bce_loss = use_bce_loss
         self.font_idx_signed_attribute_matrix = None
-        self.font_text_to_unnormalized_image_tensors = None
         self.context_length = context_length
 
         assert (not self.dump_image) or (self.font_text_to_image_tensors is None)
@@ -561,37 +530,11 @@ class MyDataset(Dataset):
         if self.dump_image:
             self.dump_image_tensor()
 
-        if self.use_negative_loss:
+        if self.use_bce_loss:
             # self.font_idx_signed_attribute_matrix is referenced at mask_font_idx_signed_attribute_matrix in order to calculate mask matrix in training
             self.font_idx_signed_attribute_matrix = (
                 self.create_font_idx_signed_attribute_matrix()
             )
-
-        self.font_to_vae_target_character_tensor = {}
-        self.character_to_one_hot_vector = {}
-        if self.use_vae_loss:
-            preprocess_for_resize_ = transform_for_resize(
-                self.vae_target_character_size
-            )
-            for font_name, font_path in zip(self.font_names, self.font_paths):
-                font = ImageFont.truetype(font_path, self.vae_target_character_size)
-                self.font_to_vae_target_character_tensor[font_name] = torch.stack(
-                    [
-                        preprocess_for_resize_(
-                            self.create_vae_target_character_image(
-                                c, font, char_size=self.vae_target_character_size
-                            )
-                        )
-                        for c in self.vae_target_characters
-                    ]
-                ).to(model.dtype)
-
-            for c in self.vae_target_characters:
-                one_hot_vector = torch.zeros(len(self.vae_target_characters)).to(
-                    model.dtype
-                )
-                one_hot_vector[self.vae_target_characters.index(c)] = 1
-                self.character_to_one_hot_vector[c] = one_hot_vector
 
     def __len__(self):
         if self.predict_mode:
@@ -614,14 +557,6 @@ class MyDataset(Dataset):
         if self.image_file_dir is not None:
             return int(count)
         return int(count * len(self.texts_for_font_image))
-
-    @classmethod
-    def create_vae_target_character_image(cls, char, font, char_size=64):
-        assert len(char) == 1
-        width = char_size
-        height = char_size
-        image = draw_text_with_new_lines(char, font, width, height)
-        return image.convert("L")
 
     def create_image(self, text, font, font_path=None, no_preprocess=False, padding=0):
         if self.image_file_dir:
@@ -696,45 +631,17 @@ class MyDataset(Dataset):
         font = self.fonts[font_idx]
         tokenized_prompt = self.font_to_attributes[font_name][attribute_idx]
 
-        # vae target character
-        vae_target_character_tensor = None
-        one_hot_vector = None
-        if self.use_vae_loss:
-            tmp_font_path = self.font_paths[font_idx]
-            tmp_font_name = os.path.splitext(os.path.basename(tmp_font_path))[0]
-            character_idx = random.randint(0, len(self.vae_target_characters) - 1)
-            vae_target_character_tensor = self.font_to_vae_target_character_tensor[
-                tmp_font_name
-            ][character_idx]
-            one_hot_vector = self.character_to_one_hot_vector[
-                self.vae_target_characters[character_idx]
-            ]
-
-        image_2 = None
         if self.font_text_to_image_tensors is not None:
             pool_idx = text_idx * len(self.fonts) + font_idx
             images = self.font_text_to_image_tensors[pool_idx]
             # randomly sample one image
             random_index = random.randint(0, len(images) - 1)
             image = images[random_index]
-            if self.use_contrastive_image_loss:
-                random_index_2 = random.randint(0, len(images) - 1)
-                image_2 = images[random_index_2]
-
-            if self.store_unnormalized_image:
-                assert self.font_text_to_unnormalized_image_tensors is not None
-                unnormalized_images = self.font_text_to_unnormalized_image_tensors[
-                    pool_idx
-                ]
-                unnormalized_image = unnormalized_images[random_index]
 
         else:
             if self.dump_image:
                 image_idx = text_idx * len(self.fonts) + font_idx
                 image = self.dumped_images[image_idx]
-                # assert self.font_text_to_unnormalized_image_tensors is not None
-                # unnormalized_images = self.font_text_to_unnormalized_image_tensors[]
-                # unnormalized_image = unnormalized_images[random_index]
             else:
                 image = self.create_image(text, font, font_path)
 
@@ -746,53 +653,15 @@ class MyDataset(Dataset):
             weight = self.font_to_attribute_weights[font_name][attribute_idx]
             return image, tokenized_prompt.squeeze(0), weight
 
-        if self.use_multiple_attributes and self.use_negative_loss:
+        if self.use_multiple_attributes and self.use_bce_loss:
             attribute_indices = self.font_to_attribute_indices[font_name][attribute_idx]
             # unsinged_attribute_idx = [tmp_attribute_idx - 1 if tmp_attribute_idx <= len(all_attributes) else len(all_attributes)*2+1 - tmp_attribute_idx - 1 for tmp_attribute_idx in attribute_indices]
-            if self.store_unnormalized_image:
-                return (
-                    image,
-                    unnormalized_image,
-                    tokenized_prompt.squeeze(0),
-                    font_idx,
-                    attribute_indices.type(torch.int64),
-                )
-            elif self.use_contrastive_image_loss:
-                assert image_2 is not None
-                if vae_target_character_tensor is not None:
-                    return (
-                        image,
-                        image_2,
-                        tokenized_prompt.squeeze(0),
-                        font_idx,
-                        attribute_indices.type(torch.int64),
-                        vae_target_character_tensor,
-                        one_hot_vector,
-                    )
-                return (
-                    image,
-                    image_2,
-                    tokenized_prompt.squeeze(0),
-                    font_idx,
-                    attribute_indices.type(torch.int64),
-                )
-            elif vae_target_character_tensor is not None:
-                return (
-                    image,
-                    tokenized_prompt.squeeze(0),
-                    font_idx,
-                    attribute_indices.type(torch.int64),
-                    vae_target_character_tensor,
-                    one_hot_vector,
-                )
             return (
                 image,
                 tokenized_prompt.squeeze(0),
                 font_idx,
                 attribute_indices.type(torch.int64),
             )
-        elif self.store_unnormalized_image:
-            return image, unnormalized_image, tokenized_prompt.squeeze(0)
         return image, tokenized_prompt.squeeze(0)
 
     def set_preprocess(self, preprocess):
@@ -800,13 +669,6 @@ class MyDataset(Dataset):
 
     def set_font_text_to_image_tensors(self, font_text_to_image_tensors):
         self.font_text_to_image_tensors = font_text_to_image_tensors
-
-    def set_font_text_to_unnormalized_image_tensors(
-        self, font_text_to_unnormalized_image_tensors
-    ):
-        self.font_text_to_unnormalized_image_tensors = (
-            font_text_to_unnormalized_image_tensors
-        )
 
     def dump_image_tensor(self):
         self.dumped_images = []
@@ -1056,83 +918,6 @@ class TestTextDataset(Dataset):
         return self.prompts[idx][0]
 
 
-def set_image_tensors(dataset: MyDataset, preprocess=my_preprocess, sample_num=5):
-    dataset.set_preprocess(preprocess)
-    font_text_to_image_tensors = []
-    font_text_to_unnormalized_image_tensors = []
-    preprocess_for_resize = transform_for_resize(
-        n_px=dataset.n_px_of_unnormalized_image
-    )
-    if dataset.n_px_of_unnormalized_image == 224:
-        preprocess_for_resize = to_tensor
-    if dataset.image_file_dir is not None:
-        print("load image tensors from image files ...")
-        assert len(dataset.texts_for_font_image) == 1
-        for font_path in tqdm(dataset.font_paths):
-            font_name = os.path.splitext(os.path.basename(font_path))[0]
-            image_file_path = os.path.join(dataset.image_file_dir, font_name + ".png")
-            image = Image.open(image_file_path)
-            image = my_convert_to_rgb(image)
-            if dataset.store_unnormalized_image:
-                unnormalized_images = [
-                    preprocess_for_aug(image) for _ in range(sample_num)
-                ]
-                images = [
-                    preprocess_for_normalize(unnormalized_image)
-                    for unnormalized_image in unnormalized_images
-                ]
-                unnormalized_images = [
-                    preprocess_for_resize(to_pil_image(unnormalized_image).convert("L"))
-                    for unnormalized_image in unnormalized_images
-                ]
-                font_text_to_unnormalized_image_tensors.append(
-                    torch.stack(unnormalized_images).to(model.dtype)
-                )
-            else:
-                images = [preprocess(image).to(model.dtype) for _ in range(sample_num)]
-            font_text_to_image_tensors.append(torch.stack(images))
-    else:
-        print("create image tensors from font files ...")
-        for text in dataset.texts_for_font_image:
-            for font in tqdm(dataset.fonts):
-                # images = []
-                # for _ in range(sample_num):
-                #     image = dataset.create_image(text, font)
-                #     images.append(image)
-                unpreprocessed_image = dataset.create_image(
-                    text, font, no_preprocess=True
-                )
-                if dataset.store_unnormalized_image:
-                    unnormalized_images = [
-                        preprocess_for_aug(unpreprocessed_image)
-                        for _ in range(sample_num)
-                    ]
-                    images = [
-                        preprocess_for_normalize(unnormalized_image)
-                        for unnormalized_image in unnormalized_images
-                    ]
-                    unnormalized_images = [
-                        preprocess_for_resize(
-                            to_pil_image(unnormalized_image).convert("L")
-                        )
-                        for unnormalized_image in unnormalized_images
-                    ]
-                    font_text_to_unnormalized_image_tensors.append(
-                        torch.stack(unnormalized_images).to(model.dtype)
-                    )
-                else:
-                    images = [
-                        preprocess(unpreprocessed_image).to(model.dtype)
-                        for _ in range(sample_num)
-                    ]
-                font_text_to_image_tensors.append(torch.stack(images).to(model.dtype))
-    if dataset.store_unnormalized_image:
-        dataset.set_font_text_to_unnormalized_image_tensors(
-            font_text_to_unnormalized_image_tensors
-        )
-    dataset.set_font_text_to_image_tensors(font_text_to_image_tensors)
-
-
 def set_image_tensors(
     dataset: MyDataset,
     preprocess=my_preprocess,
@@ -1143,12 +928,6 @@ def set_image_tensors(
     color_jitter_preprocess = my_transform(do_color_jitter=True)
     dataset.set_preprocess(preprocess)
     font_text_to_image_tensors = []
-    font_text_to_unnormalized_image_tensors = []
-    preprocess_for_resize = transform_for_resize(
-        n_px=dataset.n_px_of_unnormalized_image
-    )
-    if dataset.n_px_of_unnormalized_image == 224:
-        preprocess_for_resize = to_tensor
     if color_jitter_sample_num > 0:
         assert dataset.image_file_dir is not None
         # TODO: implement for image_file_dir is None
@@ -1160,23 +939,7 @@ def set_image_tensors(
             image_file_path = os.path.join(dataset.image_file_dir, font_name + ".png")
             image = Image.open(image_file_path)
             image = my_convert_to_rgb(image)
-            if dataset.store_unnormalized_image:
-                unnormalized_images = [
-                    preprocess_for_aug(image) for _ in range(sample_num)
-                ]
-                images = [
-                    preprocess_for_normalize(unnormalized_image)
-                    for unnormalized_image in unnormalized_images
-                ]
-                unnormalized_images = [
-                    preprocess_for_resize(to_pil_image(unnormalized_image).convert("L"))
-                    for unnormalized_image in unnormalized_images
-                ]
-                font_text_to_unnormalized_image_tensors.append(
-                    torch.stack(unnormalized_images).to(model.dtype)
-                )
-            else:
-                images = [preprocess(image).to(model.dtype) for _ in range(sample_num)]
+            images = [preprocess(image).to(model.dtype) for _ in range(sample_num)]
             if color_jitter_sample_num > 0:
                 image_tensor = pil_to_tensor(image)
                 # change black to red and white to yellow, which helps to use color jitter. (black and white are not changed by color jitter)
@@ -1200,32 +963,9 @@ def set_image_tensors(
                 unpreprocessed_image = dataset.create_image(
                     text, font, no_preprocess=True, padding=padding
                 )
-                if dataset.store_unnormalized_image:
-                    unnormalized_images = [
-                        preprocess_for_aug(unpreprocessed_image)
-                        for _ in range(sample_num)
-                    ]
-                    images = [
-                        preprocess_for_normalize(unnormalized_image)
-                        for unnormalized_image in unnormalized_images
-                    ]
-                    unnormalized_images = [
-                        preprocess_for_resize(
-                            to_pil_image(unnormalized_image).convert("L")
-                        )
-                        for unnormalized_image in unnormalized_images
-                    ]
-                    font_text_to_unnormalized_image_tensors.append(
-                        torch.stack(unnormalized_images).to(model.dtype)
-                    )
-                else:
-                    images = [
-                        preprocess(unpreprocessed_image).to(model.dtype)
-                        for _ in range(sample_num)
-                    ]
+                images = [
+                    preprocess(unpreprocessed_image).to(model.dtype)
+                    for _ in range(sample_num)
+                ]
                 font_text_to_image_tensors.append(torch.stack(images).to(model.dtype))
-    if dataset.store_unnormalized_image:
-        dataset.set_font_text_to_unnormalized_image_tensors(
-            font_text_to_unnormalized_image_tensors
-        )
     dataset.set_font_text_to_image_tensors(font_text_to_image_tensors)

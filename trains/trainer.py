@@ -174,10 +174,7 @@ class Trainer:
                 exclusive_attributes=tmp_exclusive_attributes,
                 geta=self.config.geta,
                 single_character=self.config.single_character,
-                use_negative_loss=self.config.use_negative_loss
-                or self.config.use_bce_loss,
-                use_contrastive_image_loss=self.config.use_contrastive_image_loss or self.config.use_triplet_image_loss,
-                store_unnormalized_image=False,
+                use_bce_loss=self.config.use_bce_loss,
                 char_size=self.config.char_size,
                 context_length=self.config.context_length,
             )
@@ -187,44 +184,6 @@ class Trainer:
             )
             print("train dataset font num: ", len(dataset.font_paths))
 
-            unlabeled_dataset = None
-            if self.config.unlabeled_json_path is not None:
-                unlabeled_dataset = MyDataset(
-                    font_dir,
-                    self.config.unlabeled_json_path,
-                    texts_for_font_image=self.config.texts_for_font_image,
-                    use_negative=self.config.use_negative,
-                    use_weight=self.config.use_weight,
-                    use_score=self.config.use_score,
-                    use_multiple_attributes=self.config.use_multiple_attributes,
-                    use_random_attributes=self.config.use_random_attributes,
-                    random_prompts_num=self.config.unlabeled_random_prompts_num,
-                    max_sample_num=self.config.max_sample_num,
-                    rich_prompt=self.config.rich_prompt,
-                    sample_num_each_epoch=self.config.sample_num_each_epoch,
-                    image_file_dir=self.config.image_file_dir,
-                    attribute_threshold=self.config.attribute_threshold,
-                    attribute_under_threshold=self.config.attribute_under_threshold,
-                    preprocess=self.config.tmp_preprocess,
-                    dump_image=self.config.train_dump_image,
-                    exclusive_attributes=tmp_exclusive_attributes,
-                    geta=1.0,
-                    single_character=self.config.single_character,
-                    use_negative_loss=self.config.use_negative_loss,
-                    char_size=self.config.char_size,
-                    context_length=self.config.context_length,
-                )
-                print(
-                    "train prompts num of unlabeled_data: ",
-                    sum(
-                        [len(v) for v in unlabeled_dataset.font_to_attributes.values()]
-                    ),
-                )
-                print(
-                    "train dataset font num of unlabeled_data: ",
-                    len(unlabeled_dataset.font_paths),
-                )
-
             # use aug
             if self.config.use_aug or self.config.tmp_preprocess != preprocess:
                 set_image_tensors(
@@ -233,19 +192,9 @@ class Trainer:
                     sample_num=self.config.sample_num,
                     color_jitter_sample_num=self.config.color_jitter_sample_num if self.config.use_color_jitter else 0
                 )
-                if unlabeled_dataset is not None:
-                    set_image_tensors(
-                        unlabeled_dataset,
-                        preprocess=self.config.tmp_preprocess,
-                        sample_num=self.config.unlabeled_sample_num,
-                    )
-                    print(
-                        f"{sum([len(image_tensors) for image_tensors in dataset.font_text_to_image_tensors]) + sum([len(image_tensors) for image_tensors in unlabeled_dataset.font_text_to_image_tensors])} images are randomly created."
-                    )
-                else:
-                    print(
-                        f"{sum([len(image_tensors) for image_tensors in dataset.font_text_to_image_tensors])} images are randomly created."
-                    )
+                print(
+                    f"{sum([len(image_tensors) for image_tensors in dataset.font_text_to_image_tensors])} images are randomly created."
+                )
 
             val_datasets = None
             test_datasets = None
@@ -343,17 +292,6 @@ class Trainer:
                 pin_memory=False,
                 num_workers=0,
             )
-            unlabeled_it = None
-            if unlabeled_dataset is not None:
-                unlabeled_dataloader = DataLoader(
-                    unlabeled_dataset,
-                    batch_size=self.config.BATCH_SIZE,
-                    shuffle=True,
-                    pin_memory=False,
-                    num_workers=0,
-                )
-                if unlabeled_dataloader is not None:
-                    unlabeled_it = iter(unlabeled_dataloader)
 
             # https://github.com/openai/CLIP/issues/57
             def convert_models_to_fp32(model):
@@ -531,15 +469,6 @@ class Trainer:
                     batch_count += 1
                     if batch_count > batch_max_num:
                         break
-                    if unlabeled_it is not None:
-                        # generate random number from 0.0 to 1.0
-                        random_num = np.random.rand()
-                        if random_num < self.config.unlabeled_sampling_ratio:
-                            try:
-                                batch = next(unlabeled_it)
-                            except StopIteration:
-                                unlabeled_it = iter(unlabeled_dataloader)
-                                batch = next(unlabeled_it)
 
                     optimizer.zero_grad()
                     if self.config.use_coop_text or self.config.use_coop_vision:
@@ -571,23 +500,6 @@ class Trainer:
                             font_indices, attribute_indices
                         )
                         mask_matrix = mask_matrix.to(device).to(torch.float16)
-                    elif dataset.use_negative_loss:
-                        if dataset.use_contrastive_image_loss:
-                            (
-                                images,
-                                images_contrastive,
-                                texts,
-                                font_indices,
-                                attribute_indices,
-                            ) = batch
-                        else:
-                            images, texts, font_indices, attribute_indices = batch
-                        font_indices = font_indices.to(device)
-                        attribute_indices = attribute_indices.to(device)
-                        mask_matrix = dataset.mask_font_idx_signed_attribute_matrix(
-                            font_indices, attribute_indices
-                        )
-                        mask_matrix = mask_matrix.to(device)
                     else:
                         images, texts = batch
 
@@ -666,14 +578,9 @@ class Trainer:
                                 images, texts
                             )
 
-                    if self.config.train_only_visual_encoder:
-                        ground_truth = torch.arange(
-                            len(images_1), dtype=torch.long, device=device
-                        )
-                    else:
-                        ground_truth = torch.arange(
-                            len(images), dtype=torch.long, device=device
-                        )
+                    ground_truth = torch.arange(
+                        len(images), dtype=torch.long, device=device
+                    )
 
                     if dataset.use_score:
                         scores = scores.to(device)
@@ -697,13 +604,6 @@ class Trainer:
                                 loss_img(logits_per_image, ground_truth)
                                 + loss_txt(logits_per_text, ground_truth)
                             ) / 2
-
-                    if self.config.use_negative_loss:
-                        negative_loss = (
-                            torch.mean(logits_per_image * mask_matrix)
-                            * self.config.negative_loss_weight
-                        )
-                        total_loss += negative_loss
 
                     if self.config.use_contrastive_image_loss:
                         total_loss += (
@@ -931,8 +831,6 @@ class Trainer:
                 os.rename(model_path, best_checkpoint_path)
 
             dataset.do_apotosis()
-            if unlabeled_dataset is not None:
-                unlabeled_dataset.do_apotosis()
             if val_datasets is not None:
                 for val_dataset in val_datasets:
                     val_dataset.do_apotosis()
@@ -940,11 +838,6 @@ class Trainer:
                 for test_dataset in test_datasets:
                     test_dataset.do_apotosis()
 
-            del unlabeled_dataset
             del dataset
             del val_datasets
             del test_datasets
-
-            if self.config.do_profile:
-                snapshot = tracemalloc.take_snapshot()
-                tracemalloc.stop()
