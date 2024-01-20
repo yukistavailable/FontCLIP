@@ -5,7 +5,6 @@ from models.init_model import (
     device,
     preprocess,
     load_model,
-    preprocess_for_single_character,
 )
 from utils.initialize_font_data import (
     fox_text,
@@ -36,11 +35,10 @@ class Config:
     lr: float = 2e-5
     coop_lr: float = 1e-3
     lr_schedular_end_factor: float = 0.1
-    use_bce_loss: bool = False
+    use_bce_loss: bool = True
     use_negative: bool = True
     use_multiple_attributes: bool = True
     use_random_attributes: bool = True
-    use_single_character: bool = False
     random_prompts_num: int = 1000
     max_sample_num: int = 3
     sample_num_each_epoch: int = 20
@@ -61,13 +59,8 @@ class Config:
     precontext_dropout_rate: float = 0.1
     pt_applied_layers: List[str] = None
 
-
     char_size: int = 250
     test_char_size: int = 150
-
-    # for managing model num to be trained
-    start_index_for_train_model: int = 0
-    trained_model_num: int = 1
 
     # use aug or not
     use_aug: bool = True
@@ -78,7 +71,6 @@ class Config:
     tmp_dump_image: bool = True
     rich_prompt: bool = False
     sample_num: int = 250
-    single_character: bool = False
     do_optimize: bool = True
     do_profile: bool = False
     image_file_dir: str = gray_scale_image_file_dir
@@ -117,63 +109,17 @@ class Config:
             self.context_length -= self.model.precontext_length_text
 
         self.val_texts_for_font_image = self.texts_for_font_image
-        if self.use_single_character:
-            self.image_file_dir = None
-            self.train_dump_image = True
-            self.char_size = 250
-            self.test_char_size = 250
-            self.tmp_preprocess = preprocess_for_single_character
-            self.lower_bound_of_scale = 0.85
-            # all alphabet
-            self.texts_for_font_image = [
-                # c for c in (string.ascii_uppercase + string.ascii_lowercase)
-                # c for c in (string.ascii_uppercase)
-                "A",
-                "B",
-                "C",
-                "D",
-                "E",
-                "F",
-                "G",
-                "H",
-                "I",
-                "J",
-                "K",
-                "L",
-                "M",
-                "N",
-                "O",
-                "P",
-                "Q",
-                "R",
-                "S",
-                "T",
-            ]
-            self.val_texts_for_font_image = [
-                "U",
-                "V",
-                "W",
-                "X",
-                "Y",
-                "Z",
-            ]
-            # self.texts_for_font_image.extend([fox_text for _ in range(20)])
-        elif self.texts_for_font_image is None:
+        if self.texts_for_font_image is None:
             self.texts_for_font_image = [self.vision_text]
             self.val_texts_for_font_image = [self.vision_text]
 
         self.init_lr = self.lr
         self.default_lr = self.lr
         if self.use_aug:
-            if self.use_single_character:
-                # use preprocess_for_single_character
-                self.tmp_preprocess = preprocess_for_single_character
-            else:
-                # self.tmp_preprocess = my_preprocess
-                print("preprocess: lower_bound_of_scale: ", self.lower_bound_of_scale)
-                self.tmp_preprocess = my_transform(
-                    self.model.visual.input_resolution, self.lower_bound_of_scale
-                )
+            print("preprocess: lower_bound_of_scale: ", self.lower_bound_of_scale)
+            self.tmp_preprocess = my_transform(
+                self.model.visual.input_resolution, self.lower_bound_of_scale
+            )
         else:
             self.sample_num = 1
             self.tmp_preprocess = preprocess
@@ -209,34 +155,11 @@ class Config:
                         10,
                         11,
                     ]
-                    self.pt_applied_layers = [0, 1, 2]
             else:
                 self.target_layers_text = [
                     "resblocks.9",
                     "resblocks.10",
                     "resblocks.11",
-                ]
-        elif self.model_name == "ViT-L/14":
-            if (
-                self.use_coop_text
-                or self.use_coop_vision
-            ):
-                self.target_layers_text = []
-                self.target_layers_vision = []
-            else:
-                self.target_layers_text = [
-                    "resblocks.9",
-                    "resblocks.10",
-                    "resblocks.11",
-                ]
-                self.target_layers_vision = [
-                    "transformer.resblocks.17",
-                    "transformer.resblocks.18",
-                    "transformer.resblocks.19",
-                    "transformer.resblocks.20",
-                    "transformer.resblocks.21",
-                    "transformer.resblocks.22",
-                    "transformer.resblocks.23",
                 ]
 
         self.set_signature()
@@ -329,8 +252,6 @@ class Config:
         self.signature += f"_max_attr_num_{self.max_sample_num}"
         self.signature += f"_random_p_num_{self.random_prompts_num}"
         self.signature += f"_geta{self.geta}"
-        if self.use_single_character:
-            self.signature += "_single_char"
         if self.use_negative:
             self.signature += "_use_negative"
         self.signature += f"_lr{self.lr}-{self.lr_schedular_end_factor}"

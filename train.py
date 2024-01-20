@@ -41,13 +41,7 @@ if __name__ == "__main__":
     lr = 2e-5
     lr = 2e-4 # for lora
     lr_schedular_end_factor = 0.1
-    use_bce_loss = True
-    use_triplet_image_loss = False
-    triplet_image_loss_weight = 1.0
-    triplet_image_loss_margin = 0.05
-    use_negative_loss = False
     use_negative = True
-    use_single_character = False
     geta = 0.2
 
     predict_mode = False
@@ -140,7 +134,6 @@ if __name__ == "__main__":
     # for precontext_vision_length in precontext_vision_lengths:
     # for negative_loss_weight in negative_loss_weights:
     # for lr in lrs:
-    # for triplet_image_loss_weight in [0.1, 0.01, 0.2, 0.3]:
     if True:
         # for max_sampled_attributes_num in max_sampled_attributes_nums:
         # for lower_bound_of_scale in lower_bound_of_scales:
@@ -170,14 +163,12 @@ if __name__ == "__main__":
                 use_aug=use_aug,
                 use_color_jitter=use_color_jitter,
                 color_jitter_sample_num=color_jitter_sample_num,
-                use_bce_loss=use_bce_loss,
                 use_negative=use_negative,
                 max_sample_num=max_sampled_attributes_num,
                 random_prompts_num=random_prompt_num_per_font,
                 sample_num_each_epoch=num_of_prompt_per_font_per_epoch,
                 sample_num=sample_num,
                 model_name=model_name,
-                use_single_character=use_single_character,
                 use_oft_vision=use_oft_vision,
                 use_oft_text=use_oft_text,
                 oft_config_vision=oft_config_vision,
@@ -196,8 +187,6 @@ if __name__ == "__main__":
                 pt_applied_layers=pt_applied_layers,
                 lower_bound_of_scale=lower_bound_of_scale,
                 texts_for_font_image=texts_for_font_image,
-                start_index_for_train_model=i,
-                trained_model_num=trained_model_num,
                 geta=geta,
             )
             trainer = Trainer(config)

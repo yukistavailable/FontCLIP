@@ -397,7 +397,7 @@ class MyDataset(Dataset):
         exclusive_attributes: Optional[List[str]] = None,
         single_character: bool = False,
         geta: float = 0.0,
-        use_bce_loss: bool = False,
+        use_bce_loss: bool = True,
         context_length: int = 77,
     ):
         """
@@ -468,7 +468,7 @@ class MyDataset(Dataset):
             geta is added to the attribute score for calculating the probability of each attribute
             this parameter is used to balance the probability
         use_bce_loss : bool, optional
-            use bce loss or not, by default False
+            use bce loss or not, by default True
             if use_bce_loss is True, the dataset returns font_idx, signed_attribute_indices, and tokenized_prompt for calculating mask matrix as the weight of BCELoss in training
         context_length : int, optional
             context length, by default 77
