@@ -9,7 +9,6 @@ fox_text = 'The quick brown\nfox jumps over\nthe lazy dog'
 fox_text_four_lines = 'The quick\nbrown fox\njumps over\nthe lazy dog'
 
 font_dir = os.path.join(BASE_DIR, "gwfonts")
-cj_font_dir = os.path.join(BASE_DIR, "all-fonts")
 gray_scale_image_file_dir = os.path.join(BASE_DIR, "attributeData/grayscale_images")
 all_gray_scale_image_file_dir = os.path.join(BASE_DIR, "attributeData/all_grayscale_images")
 all_json_path = os.path.join(
@@ -52,7 +51,7 @@ font_names = list(all_json.keys())
 all_gwfonts_names = list(all_gwfonts_json.keys())
 
 
-def retrieve_font_path(font_name: str, font_dir: str = cj_font_dir) -> str:
+def retrieve_font_path(font_name: str, font_dir: str) -> str:
     """
     Retrieve font path from font name
 
