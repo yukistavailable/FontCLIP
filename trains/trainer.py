@@ -42,12 +42,6 @@ class Trainer:
         tmp_validation_json_path = validation_json_path
         val_texts_for_font_image = self.config.val_texts_for_font_image
 
-        print(f"Checkpoint Path: {self.config.checkpoint_path}")
-
-        if self.config.use_unpretrained_model:
-            print("Warning: use unpretrained model")
-            self.config.model.initialize_parameters()
-        print(f"Signature: {self.config.signature}")
 
         # define training dataset
         dataset = MyDataset(
@@ -115,6 +109,13 @@ class Trainer:
             pin_memory=False,
             num_workers=0,
         )
+
+        print(f"Checkpoint Path: {self.config.checkpoint_path}")
+
+        if self.config.use_unpretrained_model:
+            print("Warning: use unpretrained model")
+            self.config.model.initialize_parameters()
+        print(f"Signature: {self.config.signature}")
 
         # https://github.com/openai/CLIP/issues/57
         def convert_models_to_fp32(model):

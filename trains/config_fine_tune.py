@@ -125,6 +125,9 @@ class Config:
             self.tmp_preprocess = preprocess
         self.target_layers_text = []
         self.target_layers_vision = []
+
+        # TODO: support other models than ViT-B/32
+        assert self.model_name == "ViT-B/32", "Only ViT-B/32 is supported"
         if self.model_name == "ViT-B/32":
             if (
                 self.use_oft_vision
