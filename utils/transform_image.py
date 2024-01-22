@@ -1,5 +1,5 @@
 import os
-from typing import Optional, List
+from typing import Optional, List, Dict, Callable
 from tqdm import tqdm
 
 import PIL
@@ -11,10 +11,10 @@ from torchvision.transforms import (
     Normalize,
     RandomRotation,
     RandomResizedCrop,
-    CenterCrop,
     Resize,
     ColorJitter,
 )
+from models.ex_clip import ExCLIP
 
 char_size = 150
 device = "cuda:0" if torch.cuda.is_available() else "cpu"
@@ -98,7 +98,7 @@ def transform_for_aug(
     
 
 
-def transform_for_noresize() -> list:
+def transform_for_normalize() -> list:
     """
     Return the transformation for the augmentation.
 
@@ -159,15 +159,15 @@ def my_transform(
     if do_aug:
         processes += transform_for_aug(n_px, lower_bound_of_scale, upper_bound_of_scale, do_color_jitter=do_color_jitter)
     if do_normalize:
-        processes += transform_for_noresize()
+        processes += transform_for_normalize()
     return Compose(processes)
 
 
 def generate_all_fonts_embedded_images(
     font_paths: str,
     text: str,
-    model: any,
-    preprocess: any,
+    model: ExCLIP,
+    preprocess: Callable[[PIL.Image], torch.Tensor],
     char_size: int = char_size,
     image_file_dir: Optional[str] = None,
     device: str = device,
@@ -185,7 +185,7 @@ def generate_all_fonts_embedded_images(
         List of font paths
     text : str
         Input text
-    model : CLIP
+    model : ExCLIP
         CLIP model
     preprocess : function
         Preprocess function
@@ -236,7 +236,34 @@ def generate_images_for_fonts(
     aug_num: int = 1,
     crop_h: Optional[int] = None,
     crop_w: Optional[int] = None,
-) -> dict:
+) -> Dict[str, torch.Tensor]:
+    """
+    Generate tensors of the input text or image file for all fonts
+
+    Parameters
+    ----------
+    font_paths : list of str
+        List of font paths
+    text : str
+        Input text e.g. "The quick\nbrown fox\njumps over\nthe lazy dog"
+    preprocess : function
+        Preprocess function
+    char_size : int
+        Character size in the rendered image
+    image_file_dir : str
+        Directory of font images
+        if image_file_dir is not None, text is ignored
+    aug_num : int
+        Number of augmentation
+    crop_h : int
+        Height of the crop
+    crop_w : int
+        Width of the crop
+        
+    Returns
+    -------
+    result : dict of torch.Tensor
+    """
     result = {}
     use_tqdm = False
     if aug_num > 1:
@@ -246,7 +273,9 @@ def generate_images_for_fonts(
         font_name = os.path.splitext(os.path.basename(font_path))[0]
         image = None
         if image_file_dir is not None:
-            image = Image.open(os.path.join(image_file_dir, font_name + ".png"))
+            image_file_path = os.path.join(image_file_dir, font_name + ".png")
+            assert os.path.exists(image_file_path), f"{image_file_path} does not exist"
+            image = Image.open(image_file_path)
             image = my_convert_to_rgb(image)
             if crop_h is not None and crop_w is not None:
                 w, h = image.size
