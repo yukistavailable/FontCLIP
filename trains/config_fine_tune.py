@@ -72,7 +72,6 @@ class Config:
     rich_prompt: bool = False
     sample_num: int = 250
     do_optimize: bool = True
-    do_profile: bool = False
     image_file_dir: str = gray_scale_image_file_dir
     image_file_dir_for_validation: str = gray_scale_image_file_dir
     lower_bound_of_scale: float = 0.01
@@ -163,6 +162,11 @@ class Config:
                     "resblocks.9",
                     "resblocks.10",
                     "resblocks.11",
+                ]
+                self.target_layers_vision = [
+                    "transformer.resblocks.9",
+                    "transformer.resblocks.10",
+                    "transformer.resblocks.11",
                 ]
 
         self.set_signature()

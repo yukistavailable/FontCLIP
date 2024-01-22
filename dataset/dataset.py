@@ -270,8 +270,7 @@ class MyDataset(Dataset):
         return mask_matrix
 
     def update_font_attribute_counts(self) -> None:
-        """ 
-        """
+        """ """
         if self.use_multiple_attributes:
             self.font_attribute_counts = (
                 len(self.font_paths) * self.sample_num_each_epoch
@@ -282,10 +281,17 @@ class MyDataset(Dataset):
                 tmp_font_attribute_counts += len(attribute_values)
             self.font_attribute_counts = tmp_font_attribute_counts
 
-    def create_image(self, text: str, font: PIL.ImageFont, font_path: Optional[str]=None, no_preprocess: bool=False, padding: int=0) -> PIL.Image:
+    def create_image(
+        self,
+        text: str,
+        font: PIL.ImageFont,
+        font_path: Optional[str] = None,
+        no_preprocess: bool = False,
+        padding: int = 0,
+    ) -> PIL.Image:
         """
         Render font image given text and font
-        
+
         Parameters
         ----------
         text : str
@@ -355,7 +361,6 @@ class MyDataset(Dataset):
                 self.dumped_images.append(image)
 
         self.dump_image = True
-
 
     def do_apotosis(self):
         """
@@ -635,7 +640,6 @@ class MyDataset(Dataset):
                 return int(count)
             return int(count * len(self.texts_for_font_image))
 
-
     def __getitem__(self, idx):
         # Note that self.font_attribute_counts = len(self.font_paths) * self.sample_num_each_epoch if self.use_multiple_attributes else sum([len(v) for v in self.font_to_attributes.values()])
         text_idx = idx // self.font_attribute_counts
@@ -849,10 +853,17 @@ class TestImageDataset(Dataset):
             self.dump_image_tensor()
 
     # TODO: integrate with MyDataset
-    def create_image(self, text: str, font: PIL.ImageFont, font_path: Optional[str]=None, no_preprocess: bool=False, padding: int=0) -> PIL.Image:
+    def create_image(
+        self,
+        text: str,
+        font: PIL.ImageFont,
+        font_path: Optional[str] = None,
+        no_preprocess: bool = False,
+        padding: int = 0,
+    ) -> PIL.Image:
         """
         Render font image given text and font
-        
+
         Parameters
         ----------
         text : str
@@ -956,11 +967,29 @@ class TestTextDataset(Dataset):
 
 def set_image_tensors(
     dataset: MyDataset,
-    preprocess: Callable[[PIL.Image], torch.Tensor]=my_preprocess,
-    sample_num: int=5,
-    padding: int=0,
-    color_jitter_sample_num: int=0,
-):
+    preprocess: Callable[[PIL.Image], torch.Tensor] = my_preprocess,
+    sample_num: int = 5,
+    padding: int = 0,
+    color_jitter_sample_num: int = 0,
+) -> None:
+    """
+    Set image tensors to dataset.font_text_to_image_tensors
+
+    Parameters
+    ----------
+    dataset : MyDataset
+        dataset
+    preprocess : Callable[[PIL.Image], torch.Tensor], optional
+        preprocess, by default my_preprocess
+    sample_num : int, optional
+        sample num, by default 5
+        the number of samples for each font
+    padding : int, optional
+        padding, by default 0
+    color_jitter_sample_num : int, optional
+        color jitter sample num, by default 0
+        the number of color jitter samples for each font
+    """
     color_jitter_preprocess = my_transform(do_color_jitter=True)
     dataset.set_preprocess(preprocess)
     font_text_to_image_tensors = []

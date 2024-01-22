@@ -186,23 +186,15 @@ class Trainer:
 
         # unfreeze the tokens of CoOp
         if self.config.use_coop_text:
-            if self.config.do_coop_text_optimize:
-                print("Optimize prompt")
+            print("Optimize prompt")
             for name, param in self.config.model.named_parameters():
                 if name == "precontext":
-                    if self.config.do_coop_text_optimize:
-                        param.requires_grad = True
-                    else:
-                        param.requires_grad = False
+                    param.requires_grad = True
         if self.config.use_coop_vision:
-            if self.config.do_coop_vision_optimize:
-                print("Optimize vision prompt")
+            print("Optimize vision prompt")
             for name, param in self.config.model.named_parameters():
                 if name.startswith("visual.precontext_vision"):
-                    if self.config.do_coop_vision_optimize:
-                        param.requires_grad = True
-                    else:
-                        param.requires_grad = False
+                    param.requires_grad = True
 
         # print the unfreezed layers
         for name, param in self.config.model.named_parameters():
