@@ -369,7 +369,6 @@ if __name__ == "__main__":
         apply_out=args.lora_config_text_apply_out,
     )
 
-    print('aaaaa')
     config = Config(
         use_unpretrained_model=args.use_unpretrained_model,
         EPOCH=args.epoch,
