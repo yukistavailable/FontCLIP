@@ -9,7 +9,7 @@ from models.init_model import (
 from utils.initialize_font_data import (
     fox_text,
     font_dir,
-    gray_scale_image_file_dir,
+    all_gray_scale_image_file_dir,
     train_json_path,
 )
 from utils.transform_image import (
@@ -72,8 +72,8 @@ class Config:
     rich_prompt: bool = False
     sample_num: int = 250
     do_optimize: bool = True
-    image_file_dir: str = gray_scale_image_file_dir
-    image_file_dir_for_validation: str = gray_scale_image_file_dir
+    image_file_dir: str = all_gray_scale_image_file_dir
+    image_file_dir_for_validation: str = all_gray_scale_image_file_dir
     lower_bound_of_scale: float = 0.01
     model_name: str = "ViT-B/32"
 

@@ -4,52 +4,41 @@ import os
 CURRENT_DIR = os.path.dirname(os.path.abspath(__file__))
 # parent directory of CURRENT_DIR
 BASE_DIR = os.path.dirname(os.path.dirname(CURRENT_DIR))
+BASE_DIR = os.path.dirname(CURRENT_DIR)
 
 fox_text = "The quick brown\nfox jumps over\nthe lazy dog"
 fox_text_four_lines = "The quick\nbrown fox\njumps over\nthe lazy dog"
 
 font_dir = os.path.join(BASE_DIR, "gwfonts")
-gray_scale_image_file_dir = os.path.join(BASE_DIR, "attributeData/grayscale_images")
 all_gray_scale_image_file_dir = os.path.join(
-    BASE_DIR, "attributeData/all_grayscale_images"
+    BASE_DIR, "gwfonts_images"
 )
 all_json_path = os.path.join(
     BASE_DIR, "attributeData/all_font_to_attribute_values.json"
 )
 train_json_path = os.path.join(
     BASE_DIR,
-    "attributeData/train_font_to_attribute_values_cross_validation_5_0.json",
-    # BASE_DIR, "attributeData/train.json"
+    "attributeData/train_font_to_attribute_values.json",
 )
 test_json_path = os.path.join(
     BASE_DIR,
-    "attributeData/test_font_to_attribute_values_cross_validation_5_0.json",
-    # BASE_DIR, "attributeData/test.json"
+    "attributeData/test_font_to_attribute_values.json",
 )
 validation_json_path = os.path.join(
     BASE_DIR,
-    "attributeData/validation_font_to_attribute_values_cross_validation_5_0.json",
-    # BASE_DIR, "attributeData/validation.json"
+    "attributeData/validation_font_to_attribute_values.json",
 )
-all_gwfonts_json_path = os.path.join(BASE_DIR, "attributeData/all_gwfonts.json")
-train_all_gwfonts_json_path = os.path.join(
-    BASE_DIR, "attributeData/train_all_gwfonts.json"
-)
-val_all_gwfonts_json_path = os.path.join(BASE_DIR, "attributeData/val_all_gwfonts.json")
-one_leave_out_json_path = os.path.join(BASE_DIR, "attributeData/one_leave_out.json")
+all_gwfonts_json_path = os.path.join(BASE_DIR, "attributeData/all_font_to_attribute_values.json")
 all_json = json.load(open(all_json_path, "r"))
 train_json = json.load(open(train_json_path, "r"))
 test_json = json.load(open(test_json_path, "r"))
 validation_json = json.load(open(validation_json_path, "r"))
-all_gwfonts_json = json.load(open(all_gwfonts_json_path, "r"))
-train_all_gwfonts_json = json.load(open(train_all_gwfonts_json_path, "r"))
-val_all_gwfonts_json = json.load(open(val_all_gwfonts_json_path, "r"))
 train_font_names = list(train_json.keys())
 test_font_names = list(test_json.keys())
 validation_font_names = list(validation_json.keys())
 all_font_names = list(all_json.keys())
 font_names = list(all_json.keys())
-all_gwfonts_names = list(all_gwfonts_json.keys())
+all_gwfonts_names = list(all_json.keys())
 
 
 def retrieve_font_path(font_name: str, font_dir: str) -> str:
