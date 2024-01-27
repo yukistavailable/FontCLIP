@@ -26,7 +26,7 @@ from dataset.dataset import TestDataset, TestImageDataset, TestTextDataset
 
 CURRENT_DIR = os.path.dirname(os.path.abspath(__file__))
 # parent directory of CURRENT_DIR
-BASE_DIR = os.path.dirname(os.path.dirname(CURRENT_DIR))
+BASE_DIR = os.path.dirname(CURRENT_DIR)
 
 
 def predict_cos_sim(

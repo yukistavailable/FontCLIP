@@ -4,6 +4,7 @@ from tqdm import tqdm
 
 import PIL
 from PIL import Image, ImageDraw, ImageFont
+from PIL.Image import Image as PILImage
 import torch
 from torchvision.transforms import (
     Compose,
@@ -162,12 +163,11 @@ def my_transform(
         processes += transform_for_normalize()
     return Compose(processes)
 
-
 def generate_all_fonts_embedded_images(
     font_paths: str,
     text: str,
     model: ExCLIP,
-    preprocess: Callable[[PIL.Image], torch.Tensor],
+    preprocess: Callable[[PILImage], torch.Tensor],
     char_size: int = char_size,
     image_file_dir: Optional[str] = None,
     device: str = device,

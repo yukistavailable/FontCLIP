@@ -1,6 +1,8 @@
 MIT License
 
 Copyright (c) yukistavailable
+Copyright (c) 2023 All authors of the paper Controlling Text-to-Image Diffusion by Orthogonal Finetuning
+Copyright (c) 2021 Kaiyang Zhou
 Copyright (c) 2021 OpenAI
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -20,4 +22,3 @@ AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
-

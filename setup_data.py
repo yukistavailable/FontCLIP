@@ -6,7 +6,8 @@ import requests
 import shutil
 import gdown
 from tqdm import tqdm
-from PIL import Image, ImageDraw, ImageFont
+from PIL import ImageFont
+from utils.transform_image import draw_text_with_new_lines
 
 
 def download_and_unzip(url):
@@ -27,13 +28,16 @@ def download_and_unzip(url):
     # remove __MACOSX folder
     shutil.rmtree("__MACOSX")
 
+    if os.path.exists('gwfonts/._.DS_Store'):
+      os.remove('gwfonts/._.DS_Store')
+
 
 # see the website for more details: https://www.dgp.toronto.edu/~donovan/font/
 urls = [
   # "https://www.dgp.toronto.edu/~donovan/font/gwfonts.zip",
-  # "https://drive.google.com/uc?id=1xpHkuqQtcpHt6r8xGL60KTMv4EYMEnRD",
-  # "https://www.dgp.toronto.edu/~donovan/font/attribute.zip",
-  # "https://www.dgp.toronto.edu/~donovan/font/similarity.zip",
+  "https://drive.google.com/uc?id=1xpHkuqQtcpHt6r8xGL60KTMv4EYMEnRD",
+  "https://www.dgp.toronto.edu/~donovan/font/attribute.zip",
+  "https://www.dgp.toronto.edu/~donovan/font/similarity.zip",
 ]
 
 for url in tqdm(urls):
@@ -78,25 +82,6 @@ json.dump(validation_font_to_attribute_values, open('attributeData/validation_fo
 json.dump(test_font_to_attribute_values, open('attributeData/test_font_to_attribute_values.json', 'w'))
 
 
-# Prepare font images
-def draw_text_with_new_lines(text, font, img_width, img_height):
-    image = Image.new('RGB', (img_width, img_height), color=(255, 255, 255))
-    draw = ImageDraw.Draw(image)
-    lines = text.split('\n')
-    y_text = None
-    for line in lines:
-        left, top, right, bottom = font.getbbox(line)
-        line_height = bottom - top
-        line_width = right - left
-
-        if y_text is None:
-            y_text = (img_height - line_height * len(lines)) / 2 if (img_height - line_height * len(lines)) / 2 > 0 else 0
-        x_text = (img_width - line_width) / 2 if (img_width - line_width) / 2 > 0 else 0
-        draw.text((x_text-left, y_text-top),
-                  line, font=font, fill=(0, 0, 0))
-        y_text += line_height
-    return image
-
 font_dir = '../gwfonts/'
 output_dir = '../gwfonts_images/'
 if not os.path.exists(output_dir):
@@ -122,3 +107,9 @@ for i in tqdm(range(len(font_paths))):
   except Exception as e:
     print(font_file)
     print(e)
+
+
+# Vector Optimization
+os.makedirs('svgs')
+os.makedirs('svgs/init')
+os.makedirs('output')

@@ -2,6 +2,7 @@ import torch
 import json
 
 from models.init_model import load_model, preprocess, my_transform
+from models.lora import LoRAConfig
 from utils.initialize_font_data import (
     retrieve_font_path,
     all_gray_scale_image_file_dir,
@@ -143,36 +144,6 @@ checkpoint_path = f"model_checkpoints/{signature}.pt"
 # )
 
 # CoOp
-tmp_model = load_model(
-    checkpoint_path,
-    model_name="ViT-B/32",
-    use_oft_vision=False,
-    use_oft_text=False,
-    oft_config_vision=None,
-    oft_config_text=None,
-    use_lora_text=False,
-    use_lora_vision=False,
-    lora_config_vision=None,
-    lora_config_text=None,
-    use_coop_text=True,
-    use_coop_vision=False,
-    precontext_length_vision=10,
-    precontext_length_text=56,
-    precontext_dropout_rate=0,
-    pt_applied_layers=None,
-)
-
-# LoRA
-# lora_config_text = LoRAConfig(
-#     r = 256,
-#     alpha = 1024.0,
-#     bias = False,
-#     learnable_alpha = False,
-#     apply_q=True,
-#     apply_k=True,
-#     apply_v=True,
-#     apply_out=True,
-# )
 # tmp_model = load_model(
 #     checkpoint_path,
 #     model_name="ViT-B/32",
@@ -180,17 +151,47 @@ tmp_model = load_model(
 #     use_oft_text=False,
 #     oft_config_vision=None,
 #     oft_config_text=None,
-#     use_lora_text=True,
+#     use_lora_text=False,
 #     use_lora_vision=False,
 #     lora_config_vision=None,
-#     lora_config_text=lora_config_text,
-#     use_coop_text=False,
+#     lora_config_text=None,
+#     use_coop_text=True,
 #     use_coop_vision=False,
 #     precontext_length_vision=10,
-#     precontext_length_text=77,
+#     precontext_length_text=56,
 #     precontext_dropout_rate=0,
 #     pt_applied_layers=None,
 # )
+
+# LoRA
+lora_config_text = LoRAConfig(
+    r = 256,
+    alpha = 1024.0,
+    bias = False,
+    learnable_alpha = False,
+    apply_q=True,
+    apply_k=True,
+    apply_v=True,
+    apply_out=True,
+)
+tmp_model = load_model(
+    checkpoint_path,
+    model_name="ViT-B/32",
+    use_oft_vision=False,
+    use_oft_text=False,
+    oft_config_vision=None,
+    oft_config_text=None,
+    use_lora_text=True,
+    use_lora_vision=False,
+    lora_config_vision=None,
+    lora_config_text=lora_config_text,
+    use_coop_text=False,
+    use_coop_vision=False,
+    precontext_length_vision=10,
+    precontext_length_text=77,
+    precontext_dropout_rate=0,
+    pt_applied_layers=None,
+)
 
 tmp_model.eval()
 embedded_images = generate_all_fonts_embedded_images(

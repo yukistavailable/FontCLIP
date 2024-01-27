@@ -3,6 +3,7 @@ import json
 import os
 import PIL
 from PIL import Image, ImageFont
+from PIL.Image import Image as PILImage
 import random
 from tqdm import tqdm
 from typing import List, Optional, Tuple, Callable, Dict
@@ -396,7 +397,7 @@ class MyDataset(Dataset):
         max_sample_num: int = 3,
         sample_num_each_epoch: int = 5,
         rich_prompt: bool = False,
-        preprocess: Optional[Callable[[PIL.Image], torch.Tensor]] = None,
+        preprocess: Optional[Callable[[PILImage], torch.Tensor]] = None,
         dump_image: bool = False,
         font_text_to_image_tensors: Optional[Dict[str, List[torch.Tensor]]] = None,
         exclusive_attributes: Optional[List[str]] = None,
@@ -967,7 +968,7 @@ class TestTextDataset(Dataset):
 
 def set_image_tensors(
     dataset: MyDataset,
-    preprocess: Callable[[PIL.Image], torch.Tensor] = my_preprocess,
+    preprocess: Callable[[PILImage], torch.Tensor] = my_preprocess,
     sample_num: int = 5,
     padding: int = 0,
     color_jitter_sample_num: int = 0,
