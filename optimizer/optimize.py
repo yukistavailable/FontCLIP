@@ -818,7 +818,7 @@ def train(cfg: Config, signature: str):
                         {"loss_fclip_direction_vision": loss_fclip_direction}, step=step
                     )
             else:
-                loss_fclip = fclip_loss(x, step=None)
+                loss_fclip = fclip_loss(x_aug if cfg.use_aug else x, step=None)
                 loss = loss + loss_fclip
 
             if cfg.use_wandb and not cfg.use_fclip_direction_loss_only:
