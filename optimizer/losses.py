@@ -128,7 +128,7 @@ class FCLIPLoss(nn.Module):
             return self.loss_weight
 
     def forward(self, x, step=None):
-        embedded_x = self.clip_model.encode_image(self.clip_preprocess(x))
+        embedded_x = self.clip_model.encode_image(self.preprocess(x))
 
         if self.use_fclip_direction_loss:
             delta_embedded_x = embedded_x - self.embedded_image_ref
