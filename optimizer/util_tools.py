@@ -334,8 +334,9 @@ def create_video(num_iter, experiment_dir, video_frame_freq):
             img_array.append(img)
 
     video_name = os.path.join(experiment_dir, "video.mp4")
+    print(video_name)
     check_and_create_dir(video_name)
-    out = cv2.VideoWriter(video_name, cv2.VideoWriter_fourcc(*"mp4v"), 30.0, (600, 600))
+    out = cv2.VideoWriter(video_name, cv2.VideoWriter_fourcc(*"mp4v"), 30.0, (200, 200))
     for iii in range(len(img_array)):
         out.write(img_array[iii])
     out.release()
