@@ -90,7 +90,7 @@ python train.py --random_prompt_num_per_font 10000 --sample_num 50 --color_jitte
 ```
 
 ## ExCLIP
-We have tried several finetuning methods (direct finetuning, [CoOp](https://github.com/KaiyangZhou/CoOp/), [LoRA](https://github.com/microsoft/LoRA), and [OFT](https://github.com/Zeju1997/oft)) and integrate them into one Python class named `ExCLIP`. - see [ex_clip.py](models/ex_clip.py) for details
+We have tried several finetuning methods (direct finetuning, [CoOp](https://github.com/KaiyangZhou/CoOp/), [VPT](https://github.com/KMnP/vpt), [LoRA](https://github.com/microsoft/LoRA), and [OFT](https://github.com/Zeju1997/oft)) and integrate them into one Python class named `ExCLIP`. - see [ex_clip.py](models/ex_clip.py) for details
 
 ## Licenses
 ### Main License
@@ -98,6 +98,8 @@ This project, based on [CLIP](https://github.com/openai/CLIP/), is licensed unde
 
 ### Additional Licenses
 The source codes for [CoOp](https://github.com/KaiyangZhou/CoOp/) in ExCLIP, is licensed under MIT License - see the [LICENSE_MIT](LICENSE_MIT.md) for details
+
+The source codes for [VPT](https://github.com/KMnP/vpt) in ExCLIP, is licensed under CC-BY-NC 4.0 License - see the [LICENSE.CC_BY_NC_SA_4.0](LICENSE.CC_BY_NC_SA_4.0.md) for details
 
 The source codes for [OFT](https://github.com/Zeju1997/oft) in ExCLIP, is licensed under MIT License - see the [LICENSE_MIT](LICENSE_MIT.md) for details
 
