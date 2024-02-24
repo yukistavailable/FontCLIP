@@ -80,7 +80,7 @@ python setup.py install
 Please be careful that the version of each library is suitable for diffvg. - see [the issue](https://github.com/BachiLi/diffvg/issues/37#issuecomment-1336335574) for details
 ### Download and setup a font dataset
 ```bash
-python setup_dataset.py
+python setup_data.py
 ```
 
 ## Finetune CLIP to produce FontCLIP
