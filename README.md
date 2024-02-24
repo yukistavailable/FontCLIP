@@ -54,10 +54,12 @@ conda create --name fontclip python=3.8.15
 conda activate fontclip
 conda install -y pytorch torchvision torchaudio pytorch-cuda=12.1 -c pytorch -c nvidia
 pip install tqdm ftfy regex gdown
+pip install gradio==3.40.0
+pip install httpx==0.24.1
 ```
 
 
-2. for vector optimization
+2. For vector optimization
 ```
 conda install -y numpy scikit-image
 conda install -y -c anaconda cmake=3.22.1
@@ -99,7 +101,7 @@ The source codes for [CoOp](https://github.com/KaiyangZhou/CoOp/) in ExCLIP, is 
 
 The source codes for [OFT](https://github.com/Zeju1997/oft) in ExCLIP, is licensed under MIT License - see the [LICENSE_MIT](LICENSE_MIT.md) for details
 
-The source codes for vector optimization are based on [Word-As-Image](https://github.com/Shiriluz/Word-As-Image), paritulary the files under `optimizer` folder. - see the [LICENSE.CC_BY_NC_SA_4.0](LICENSE.CC_BY_NC_SA_4.0.md) for details
+The source codes for vector optimization are based on [Word-As-Image](https://github.com/Shiriluz/Word-As-Image), particularly the files under `optimizer` folder. - see the [LICENSE.CC_BY_NC_SA_4.0](LICENSE.CC_BY_NC_SA_4.0.md) for details
 
 
 ## Attribution
