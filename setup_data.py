@@ -34,8 +34,7 @@ def download_and_unzip(url):
 
 # see the website for more details: https://www.dgp.toronto.edu/~donovan/font/
 urls = [
-  # "https://www.dgp.toronto.edu/~donovan/font/gwfonts.zip",
-  "https://drive.google.com/uc?id=1xpHkuqQtcpHt6r8xGL60KTMv4EYMEnRD",
+  "https://www.dgp.toronto.edu/~donovan/font/gwfonts.zip",
   "https://www.dgp.toronto.edu/~donovan/font/attribute.zip",
   "https://www.dgp.toronto.edu/~donovan/font/similarity.zip",
 ]
