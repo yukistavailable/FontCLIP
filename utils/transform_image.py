@@ -222,7 +222,7 @@ def generate_all_fonts_embedded_images(
             image_tensor = font_name_to_image_tensor[font_name].to(device)
             embedded_image = model.encode_image(image_tensor).cpu()
             if embedded_image.shape[0] > 1:
-                embedded_image = torch.mean(embedded_image, dim=0)
+                embedded_image = torch.mean(embedded_image, dim=0).unsqueeze(0).cpu()
             result[font_name] = embedded_image
     return result
 
@@ -230,7 +230,7 @@ def generate_all_fonts_embedded_images(
 def generate_images_for_fonts(
     font_paths: str,
     text: str,
-    preprocess: any,
+    preprocess: Callable[[PILImage], torch.Tensor],
     char_size: int = char_size,
     image_file_dir: Optional[str] = None,
     aug_num: int = 1,
