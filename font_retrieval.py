@@ -1,11 +1,7 @@
 import os
-import sys
-
 from utils.tokenizer import tokenize
 from utils.initialize_font_data import (
     fox_text_four_lines,
-    all_font_names,
-    all_gwfonts_names,
 )
 from models.lora import LoRAConfig
 from models.init_model import load_model, preprocess, device, my_preprocess
@@ -20,7 +16,6 @@ from PIL import Image, ImageFont
 import json
 import gradio as gr
 import matplotlib.font_manager as font_manager
-from matplotlib.font_manager import FontProperties
 
 # set your checkpoint path
 checkpoint_path = None
@@ -51,15 +46,15 @@ if __name__ == "__main__":
     # font_paths = [
     #     retrieve_font_path(font_name, font_dir=font_dir) for font_name in all_gwfonts_names
     # ]
-    font_paths = [os.path.join(font_dir, file_name)
-                  for file_name in os.listdir(font_dir)]
+    font_paths = [
+        os.path.join(font_dir, file_name) for file_name in os.listdir(font_dir)
+    ]
     all_gwfont_paths = sorted(
         [os.path.join(font_dir, tmp_font_path) for tmp_font_path in font_paths]
     )
     # font_names = [os.path.splitext(os.path.basename(f))[0] for f in os.listdir(font_dir)]
 
     preprocess_for_aug = my_transform(lower_bound_of_scale=0.3)
-
 
     # LoRA
     lora_config_text = LoRAConfig(
@@ -117,7 +112,6 @@ if __name__ == "__main__":
         image = draw_text_with_new_lines(text, font, width, height)
         return image
 
-
     def calc_cos_sim(a, b):
         dot_product = np.dot(b, a.T)
         a_norm = np.linalg.norm(a)
@@ -125,7 +119,6 @@ if __name__ == "__main__":
         cos_sim = dot_product / np.outer(b_norm, a_norm)
         # sim = dot_product / (b_norm[:, np.newaxis] * a_norm)
         return cos_sim[:, 0]
-
 
     def query_text(text, font_db, model):
         model.eval()
@@ -138,7 +131,6 @@ if __name__ == "__main__":
         cos_sim = calc_cos_sim(embedded_text, font_db)
         sorted_index = np.argsort(-cos_sim)
         return sorted_index, cos_sim
-
 
     def query_image(image, font_db, model, preprocess=preprocess, aug_num=64):
         model.eval()
@@ -153,12 +145,13 @@ if __name__ == "__main__":
                 [preprocess(image).unsqueeze(0).to(device) for _ in range(aug_num)]
             )
             embedded_images = model.encode_image(preprocessed_images).cpu()
-            embedded_image = torch.mean(embedded_images, axis=0).unsqueeze(0).cpu().numpy()
+            embedded_image = (
+                torch.mean(embedded_images, axis=0).unsqueeze(0).cpu().numpy()
+            )
         # retrieve most similar font
         cos_sim = calc_cos_sim(embedded_image, font_db)
         sorted_index = np.argsort(-cos_sim)
         return sorted_index, cos_sim
-
 
     def query_image_and_text(
         image,
@@ -183,7 +176,9 @@ if __name__ == "__main__":
                 [preprocess(image).unsqueeze(0).to(device) for _ in range(aug_num)]
             )
             embedded_images = model.encode_image(preprocessed_images).cpu()
-            embedded_image = torch.mean(embedded_images, axis=0).unsqueeze(0).cpu().numpy()
+            embedded_image = (
+                torch.mean(embedded_images, axis=0).unsqueeze(0).cpu().numpy()
+            )
         sum_embedded = alpha * embedded_image + (1 - alpha) * embedded_text
         cos_sim = calc_cos_sim(sum_embedded, font_db)
         sorted_index = np.argsort(-cos_sim)
@@ -195,13 +190,11 @@ if __name__ == "__main__":
                 continue
             image.save(f"output_images/{i}.png")
 
-
     default_text_value = "Eurographics"
     sorted_index = None
     current_index = 0
     column_num = 1
     row_num = 3
-
 
     def builder_query(
         prompt,
@@ -274,7 +267,6 @@ if __name__ == "__main__":
 
         return [None] * (column_num * row_num)
 
-
     def builder_next_query(
         command="next",
         sample_text="hand write",
@@ -296,12 +288,13 @@ if __name__ == "__main__":
         result_images = []
         for i in range(column_num):
             for j in range(row_num):
-                font_path = target_font_paths[sorted_index[current_index + i * row_num + j]]
+                font_path = target_font_paths[
+                    sorted_index[current_index + i * row_num + j]
+                ]
                 font = ImageFont.truetype(font_path, char_size)
                 image = create_image(sample_text, font)
                 result_images.append(image)
         return result_images
-
 
     def builder_next_query_slider(
         slider_value,
@@ -320,12 +313,13 @@ if __name__ == "__main__":
         result_images = []
         for i in range(column_num):
             for j in range(row_num):
-                font_path = target_font_paths[sorted_index[current_index + i * row_num + j]]
+                font_path = target_font_paths[
+                    sorted_index[current_index + i * row_num + j]
+                ]
                 font = ImageFont.truetype(font_path, char_size)
                 image = create_image(sample_text, font)
                 result_images.append(image)
         return result_images
-
 
     css = """
     .input textarea {font-size: 50px !important}
@@ -341,8 +335,9 @@ if __name__ == "__main__":
                     interactive=True,
                     visible=False,
                 )
-                text1 = gr.Text(label="Text Prompt",
-                                interactive=True, elem_classes="input")
+                text1 = gr.Text(
+                    label="Text Prompt", interactive=True, elem_classes="input"
+                )
                 slider1 = gr.Slider(
                     0,
                     1.0,
@@ -352,8 +347,7 @@ if __name__ == "__main__":
                     interactive=True,
                     visible=False,
                 )
-                image1 = gr.Image(label="Image query",
-                                  type="pil", interactive=True)
+                image1 = gr.Image(label="Image query", type="pil", interactive=True)
                 button1 = gr.Button(value="Refresh", visible=True)
             with gr.Column(scale=3):
                 with gr.Row():
@@ -382,8 +376,9 @@ if __name__ == "__main__":
                     interactive=True,
                     visible=False,
                 )
-                button2 = gr.Button(value="save outputs",
-                                    interactive=True, visible=False)
+                button2 = gr.Button(
+                    value="save outputs", interactive=True, visible=False
+                )
 
         slider1.change(
             fn=builder_query,
@@ -415,8 +410,7 @@ if __name__ == "__main__":
             outputs=gr_images,
             show_progress=False,
         )
-        button2.click(fn=save_output_buidler,
-                      inputs=gr_images, show_progress=False)
+        button2.click(fn=save_output_buidler, inputs=gr_images, show_progress=False)
         slider2.change(
             fn=builder_next_query_slider,
             inputs=[slider2, text2],
