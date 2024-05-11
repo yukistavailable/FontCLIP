@@ -3,7 +3,7 @@ import os
 from PIL import Image
 import torch
 from torch import nn
-import tqdm
+from tqdm import tqdm
 from typing import Union, List
 from torchvision.transforms import Compose, Resize, CenterCrop, ToTensor, Normalize
 import urllib
