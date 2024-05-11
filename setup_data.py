@@ -81,8 +81,7 @@ json.dump(validation_font_to_attribute_values, open('attributeData/validation_fo
 json.dump(test_font_to_attribute_values, open('attributeData/test_font_to_attribute_values.json', 'w'))
 
 
-font_dir = 'gwfonts/'
-output_dir = 'gwfonts_images/'
+output_dir = 'gwfonts_images'
 if not os.path.exists(output_dir):
     os.makedirs(output_dir)
 font_paths = os.listdir(font_dir)
