@@ -32,7 +32,7 @@ We propose two applications based on FontCLIP, font retrieval and vector optimiz
 You can retrieve desired fonts inputting a text or image, or both of them.
 Internally, the cosine distance between the input and each font in the dataset is calculated, and the fonts in top rank are returned.
 
-You can use the demo [here](notebooks/font_retrieval.ipynb).
+You can do the demo [here](font_retrieval.py).
 
 ### Vector optimization
 <br>
