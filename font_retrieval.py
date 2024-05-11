@@ -3,7 +3,6 @@ import sys
 
 from utils.tokenizer import tokenize
 from utils.initialize_font_data import (
-    retrieve_font_path,
     fox_text_four_lines,
     all_font_names,
     all_gwfonts_names,
@@ -22,7 +21,9 @@ import json
 import gradio as gr
 import matplotlib.font_manager as font_manager
 from matplotlib.font_manager import FontProperties
-checkpoint_path = "YOUR_CHECKPOINT_PATH"
+
+# set your checkpoint path
+checkpoint_path = None
 
 if __name__ == "__main__":
     # Load the model
@@ -92,7 +93,7 @@ if __name__ == "__main__":
     image_file_dir = "gwfonts_images"
     text = fox_text_four_lines
     target_font_paths = all_gwfont_paths
-    aug_num = 1
+    aug_num = 16
     embedded_images = generate_all_fonts_embedded_images(
         target_font_paths,
         text,
