@@ -1,6 +1,7 @@
 import os
 from typing import Optional, List, Dict, Callable
 from tqdm import tqdm
+import warnings
 
 import PIL
 from PIL import Image, ImageDraw, ImageFont
@@ -218,7 +219,9 @@ def generate_all_fonts_embedded_images(
         result = {}
         for font_path in font_paths:
             font_name = os.path.splitext(os.path.basename(font_path))[0]
-            assert font_name in font_name_to_image_tensor
+            if font_name not in font_name_to_image_tensor:
+                warnings.warn(f"{font_name} is not in font_name_to_image_tensor")
+                continue
             image_tensor = font_name_to_image_tensor[font_name].to(device)
             embedded_image = model.encode_image(image_tensor).cpu()
             if embedded_image.shape[0] > 1:
@@ -274,7 +277,10 @@ def generate_images_for_fonts(
         image = None
         if image_file_dir is not None:
             image_file_path = os.path.join(image_file_dir, font_name + ".png")
-            assert os.path.exists(image_file_path), f"{image_file_path} does not exist"
+            if not os.path.exists(image_file_path):
+                warnings.warn(f"{image_file_path} does not exist")
+                continue
+            # assert os.path.exists(image_file_path), f"{image_file_path} does not exist"
             image = Image.open(image_file_path)
             image = my_convert_to_rgb(image)
             if crop_h is not None and crop_w is not None:
