@@ -108,6 +108,6 @@ for i in tqdm(range(len(font_paths))):
 
 
 # Vector Optimization
-os.makedirs('svgs')
-os.makedirs('svgs/init')
-os.makedirs('output')
+os.makedirs('svgs', exist_ok=True)
+os.makedirs('svgs/init', exist_ok=True)
+os.makedirs('output', exist_ok=True)
