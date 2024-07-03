@@ -42,7 +42,7 @@ urls = [
 for url in tqdm(urls):
     download_and_unzip(url)
 
-  
+
 # Prepare json files for training, validation, and testing
 font_dir = "gwfonts"
 csv_path = "attributeData/estimatedAttributes.csv"
@@ -101,7 +101,7 @@ for i in tqdm(range(len(font_paths))):
     font_name = os.path.splitext(font_file)[0]
     font = ImageFont.truetype(os.path.join(font_dir, font_file), char_size)
     image = draw_text_with_new_lines(text, font, width, height)
-    image.save(output_dir + font_name + '.png')
+    image.save(os.path.join(output_dir, font_name + '.png'))
   except Exception as e:
     print(font_file)
     print(e)
