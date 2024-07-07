@@ -90,7 +90,7 @@ python setup_data.py
 ## Finetune CLIP to produce FontCLIP
 You can run the processor finetuning using the following command.
 
-__gwfonts from [the download website](https://www.dgp.toronto.edu/~donovan/font/) lacks more than 50 font files necessary for running the finetuning program. Download them manually. (see #3)__
+__gwfonts from [the download website](https://www.dgp.toronto.edu/~donovan/font/) lacks more than 50 font files necessary for running the finetuning program. Download them manually. (see https://github.com/yukistavailable/FontCLIP/issues/3)__
 ```
 python train.py --random_prompt_num_per_font 10000 --sample_num 50 --color_jitter_sample_num 200 --use_lora_text
 ```
