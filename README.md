@@ -54,7 +54,7 @@ You can use the demo [here](notebooks/optimize.ipynb).
 ### Create environment
 1. For finetuning CLIP
 ```bash
-conda create --name fontclip python=3.8.15
+conda create -y --name fontclip python=3.8.15
 conda activate fontclip
 conda install -y pytorch torchvision torchaudio pytorch-cuda=12.1 -c pytorch -c nvidia
 pip install tqdm ftfy regex gdown
