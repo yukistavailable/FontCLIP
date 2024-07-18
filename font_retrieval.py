@@ -1,51 +1,50 @@
+import argparse
 import os
-from utils.tokenizer import tokenize
+
+import gradio as gr
+import matplotlib.font_manager as font_manager
+import numpy as np
+import torch
+from PIL import Image, ImageFont
+
+from models.init_model import device, load_model, my_preprocess, preprocess
+from models.lora import LoRAConfig
 from utils.initialize_font_data import (
     fox_text_four_lines,
 )
-from models.lora import LoRAConfig
-from models.init_model import load_model, preprocess, device, my_preprocess
+from utils.tokenizer import tokenize
 from utils.transform_image import (
     draw_text_with_new_lines,
     generate_all_fonts_embedded_images,
     my_transform,
 )
-import numpy as np
-import torch
-from PIL import Image, ImageFont
-import json
-import gradio as gr
-import matplotlib.font_manager as font_manager
-
-# set your checkpoint path
-checkpoint_path = "model_checkpoints/model.pt"
 
 if __name__ == "__main__":
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--image_file_dir", type=str, default="gwfonts_images/")
+    parser.add_argument("--aug_num", type=int, default=8)
+    args = parser.parse_args()
+    # set your checkpoint path
+    checkpoint_path = "model_checkpoints/model.pt"
     # Load the model
-    font_dir = "gwfonts"
+    font_dir = "gwfonts/"
+    image_file_dir = "gwfonts_images/"
     char_size = 150
+    aug_num = args.aug_num
+    font_db_path = f"output/font_db_aug{aug_num}.npy"
+    text = fox_text_four_lines
 
     # add font
     for font in font_manager.findSystemFonts(font_dir):
         font_manager.fontManager.addfont(font)
-
-    ttf_list = font_manager.fontManager.ttflist
-
-    all_json_path = "attributeData/all_font_to_attribute_values.json"
-    train_json_path = "attributeData/train_font_to_attribute_values.json"
-    test_json_path = "attributeData/test_font_to_attribute_values.json"
-    validation_json_path = "attributeData/validation_font_to_attribute_values.json"
-    all_json = json.load(open(all_json_path, "r"))
-    train_json = json.load(open(train_json_path, "r"))
-    test_json = json.load(open(test_json_path, "r"))
-    validation_json = json.load(open(validation_json_path, "r"))
-    train_font_names = list(train_json.keys())
-    test_font_names = list(test_json.keys())
-    validation_font_names = list(validation_json.keys())
-
     all_gwfont_paths = sorted(
-        [os.path.join(font_dir, file_name) for file_name in os.listdir(font_dir)]
+        [
+            os.path.join(font_dir, file_name)
+            for file_name in os.listdir(font_dir)
+            if file_name not in [".DS_Store"]
+        ]
     )
+    target_font_paths = all_gwfont_paths
 
     preprocess_for_aug = my_transform(lower_bound_of_scale=0.3)
 
@@ -78,24 +77,29 @@ if __name__ == "__main__":
         precontext_dropout_rate=0,
         pt_applied_layers=None,
     )
-    image_file_dir = "gwfonts_images"
-    text = fox_text_four_lines
-    target_font_paths = all_gwfont_paths
-    aug_num = 1
-    embedded_images = generate_all_fonts_embedded_images(
-        target_font_paths,
-        text,
-        image_file_dir=image_file_dir,
-        model=model,
-        preprocess=preprocess_for_aug,
-        aug_num=aug_num,
-    )
-    # embedded_images = generate_all_fonts_embedded_images(target_font_paths, text, image_file_dir=image_file_dir, model=model, preprocess=preprocess, aug_num=1)
-    embedded_images_numpy = torch.cat(list(embedded_images.values())).cpu().numpy()
-    font_db = embedded_images_numpy
-    image_file_dir = "gwfonts_images"
-    text = fox_text_four_lines
-    target_font_paths = all_gwfont_paths
+    print("Prepare font_db...")
+    font_db = None
+    if os.path.exists(font_db_path):
+        print("Loading font_db...")
+        with open(font_db_path, "rb") as f:
+            font_db = np.load(f)
+    else:
+        print("There is no font_db, generating font_db...")
+        embedded_images = generate_all_fonts_embedded_images(
+            target_font_paths,
+            text,
+            image_file_dir=image_file_dir,
+            model=model,
+            preprocess=preprocess_for_aug,
+            aug_num=aug_num,
+        )
+        embedded_images_numpy = torch.cat(list(embedded_images.values())).cpu().numpy()
+        font_db = embedded_images_numpy
+        # save font_db
+        if not os.path.exists(os.path.dirname(font_db_path)):
+            os.makedirs(os.path.dirname(font_db_path))
+        with open(font_db_path, "wb") as f:
+            np.save(f, font_db)
 
     def create_image(text, font, char_size=char_size):
         line_num = text.count("\n") + 1
@@ -228,6 +232,7 @@ if __name__ == "__main__":
             for i in range(column_num):
                 for j in range(row_num):
                     font_path = target_font_paths[sorted_index[i * row_num + j]]
+                    print(font_path)
                     font = ImageFont.truetype(font_path, char_size)
                     image = create_image(sample_text, font)
                     result_images.append(image)
