@@ -18,7 +18,7 @@ import gradio as gr
 import matplotlib.font_manager as font_manager
 
 # set your checkpoint path
-checkpoint_path = None
+checkpoint_path = "model_checkpoints/model.pt"
 
 if __name__ == "__main__":
     # Load the model
@@ -43,16 +43,9 @@ if __name__ == "__main__":
     test_font_names = list(test_json.keys())
     validation_font_names = list(validation_json.keys())
 
-    # font_paths = [
-    #     retrieve_font_path(font_name, font_dir=font_dir) for font_name in all_gwfonts_names
-    # ]
-    font_paths = [
-        os.path.join(font_dir, file_name) for file_name in os.listdir(font_dir)
-    ]
     all_gwfont_paths = sorted(
-        [os.path.join(font_dir, tmp_font_path) for tmp_font_path in font_paths]
+        [os.path.join(font_dir, file_name) for file_name in os.listdir(font_dir)]
     )
-    # font_names = [os.path.splitext(os.path.basename(f))[0] for f in os.listdir(font_dir)]
 
     preprocess_for_aug = my_transform(lower_bound_of_scale=0.3)
 
@@ -88,7 +81,7 @@ if __name__ == "__main__":
     image_file_dir = "gwfonts_images"
     text = fox_text_four_lines
     target_font_paths = all_gwfont_paths
-    aug_num = 16
+    aug_num = 1
     embedded_images = generate_all_fonts_embedded_images(
         target_font_paths,
         text,
@@ -103,7 +96,6 @@ if __name__ == "__main__":
     image_file_dir = "gwfonts_images"
     text = fox_text_four_lines
     target_font_paths = all_gwfont_paths
-    aug_num = 16
 
     def create_image(text, font, char_size=char_size):
         line_num = text.count("\n") + 1
@@ -247,6 +239,7 @@ if __name__ == "__main__":
             for i in range(column_num):
                 for j in range(row_num):
                     font_path = target_font_paths[sorted_index[i * row_num + j]]
+                    print(font_path)
                     font = ImageFont.truetype(font_path, char_size)
                     image = create_image(sample_text, font)
                     result_images.append(image)
