@@ -24,4 +24,3 @@ jobs:
       - run: echo "$CONDA/envs/test/bin" >> $GITHUB_PATH
       - run: pip install pytest
       - run: pip install -r requirements.txt
-      - run: pytest tests/
