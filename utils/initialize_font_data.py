@@ -38,7 +38,8 @@ test_font_names = list(test_json.keys())
 validation_font_names = list(validation_json.keys())
 all_font_names = list(all_json.keys())
 font_names = list(all_json.keys())
-all_gwfonts_names = list(all_json.keys())
+all_gwfonts_names = [os.path.basename(os.path.splitext(font_file_name)[0]) for font_file_name in os.listdir(font_dir)]
+all_gwfonts_names = [font_name for font_name in all_gwfonts_names if font_name not in ['.DS_Store']]
 
 
 def retrieve_font_path(font_name: str, font_dir: str) -> str:
