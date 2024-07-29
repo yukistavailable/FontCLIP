@@ -23,6 +23,8 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--image_file_dir", type=str, default="gwfonts_images/")
     parser.add_argument("--aug_num", type=int, default=8)
+    parser.add_argument("--column_num", type=int, default=1)
+    parser.add_argument("--row_num", type=int, default=5)
     args = parser.parse_args()
     # set your checkpoint path
     checkpoint_path = "model_checkpoints/model.pt"
@@ -189,8 +191,8 @@ if __name__ == "__main__":
     default_text_value = "Eurographics"
     sorted_index = None
     current_index = 0
-    column_num = 1
-    row_num = 3
+    column_num = args.column_num
+    row_num = args.row_num
 
     def builder_query(
         prompt,
