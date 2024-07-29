@@ -6,6 +6,8 @@ import matplotlib.font_manager as font_manager
 import numpy as np
 import torch
 from PIL import Image, ImageFont
+from PIL.Image import Image as PILImage
+from typing import Optional
 
 from models.init_model import device, load_model, my_preprocess, preprocess
 from models.lora import LoRAConfig
@@ -105,6 +107,14 @@ if __name__ == "__main__":
             os.makedirs(os.path.dirname(font_db_path))
         with open(font_db_path, "wb") as f:
             np.save(f, font_db)
+    
+    def create_image_from_font_path(font_path: str, sample_text: Optional[str]) -> PILImage:
+        if font_path.endswith(".png") or font_path.endswith(".jpg"):
+            image = Image.open(font_path)
+            return image
+        font = ImageFont.truetype(font_path, char_size)
+        image = create_image(sample_text, font)
+        return image
 
     def create_image(text, font, char_size=char_size):
         line_num = text.count("\n") + 1
@@ -238,8 +248,7 @@ if __name__ == "__main__":
                 for j in range(row_num):
                     font_path = target_font_paths[sorted_index[i * row_num + j]]
                     print(font_path)
-                    font = ImageFont.truetype(font_path, char_size)
-                    image = create_image(sample_text, font)
+                    image = create_image_from_font_path(font_path, sample_text)
                     result_images.append(image)
 
             return result_images
@@ -250,8 +259,7 @@ if __name__ == "__main__":
                 for j in range(row_num):
                     font_path = target_font_paths[sorted_index[i * row_num + j]]
                     print(font_path)
-                    font = ImageFont.truetype(font_path, char_size)
-                    image = create_image(sample_text, font)
+                    image = create_image_from_font_path(font_path, sample_text)
                     result_images.append(image)
             return result_images
 
@@ -263,8 +271,7 @@ if __name__ == "__main__":
                 for j in range(row_num):
                     font_path = target_font_paths[sorted_index[i * row_num + j]]
                     print(font_path)
-                    font = ImageFont.truetype(font_path, char_size)
-                    image = create_image(sample_text, font)
+                    image = create_image_from_font_path(font_path, sample_text)
                     result_images.append(image)
             return result_images
 
