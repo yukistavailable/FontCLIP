@@ -25,15 +25,17 @@ if __name__ == "__main__":
     parser.add_argument("--aug_num", type=int, default=8)
     parser.add_argument("--column_num", type=int, default=1)
     parser.add_argument("--row_num", type=int, default=5)
+    parser.add_argument("--font_dir", type=str, default="gwfonts/")
+    parser.add_argument("--cached_font_db_path", type=str, default=None)
     args = parser.parse_args()
     # set your checkpoint path
     checkpoint_path = "model_checkpoints/model.pt"
     # Load the model
-    font_dir = "gwfonts/"
-    image_file_dir = "gwfonts_images/"
+    font_dir = args.font_dir
+    image_file_dir = args.image_file_dir
     char_size = 150
     aug_num = args.aug_num
-    font_db_path = f"output/font_db_aug{aug_num}.npy"
+    cached_font_db_path = args.cached_font_db_path
     text = fox_text_four_lines
 
     # add font
@@ -81,12 +83,13 @@ if __name__ == "__main__":
     )
     print("Prepare font_db...")
     font_db = None
-    if os.path.exists(font_db_path):
+    if cached_font_db_path is not None and os.path.exists(cached_font_db_path):
         print("Loading font_db...")
-        with open(font_db_path, "rb") as f:
+        with open(cached_font_db_path, "rb") as f:
             font_db = np.load(f)
     else:
         print("There is no font_db, generating font_db...")
+        font_db_path = f"output/font_db_aug{aug_num}.npy"
         embedded_images = generate_all_fonts_embedded_images(
             target_font_paths,
             text,
