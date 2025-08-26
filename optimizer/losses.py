@@ -204,6 +204,7 @@ class ToneLoss(nn.Module):
 class ConformalLoss:
     def __init__(self, parameters: EasyDict, device: torch.device, target_letter: str, shape_groups):
         self.parameters = parameters
+        self.device = device
         self.target_letter = target_letter
         self.shape_groups = shape_groups
         self.faces = self.init_faces(device)
@@ -215,6 +216,7 @@ class ConformalLoss:
 
 
     def get_angles(self, points: torch.Tensor) -> torch.Tensor:
+        points = points.to(self.device)
         angles_ = []
         for i in range(len(self.faces)):
             triangles = points[self.faces[i]]
